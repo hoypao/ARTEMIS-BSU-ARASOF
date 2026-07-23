@@ -1,0 +1,98 @@
+/* Shared modern polish layer — refined shadows, hover-lift, focus rings, scroll-reveal.
+   Layered on top of existing pages without changing brand colors or layout. */
+
+:root {
+  --shadow-xs: 0 1px 2px rgba(16, 8, 10, 0.04);
+  --shadow-sm: 0 1px 2px rgba(16, 8, 10, 0.04), 0 2px 8px rgba(16, 8, 10, 0.05);
+  --shadow-md: 0 2px 4px rgba(16, 8, 10, 0.04), 0 8px 24px rgba(16, 8, 10, 0.08);
+  --shadow-lg: 0 4px 8px rgba(16, 8, 10, 0.04), 0 16px 40px rgba(16, 8, 10, 0.12);
+  --shadow-glow-gold: 0 0 0 1px rgba(212, 175, 55, 0.35), 0 8px 24px rgba(212, 175, 55, 0.18);
+  --shadow-glow-maroon: 0 0 0 1px rgba(177, 18, 38, 0.15), 0 8px 24px rgba(177, 18, 38, 0.14);
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* { scrollbar-color: rgba(177, 18, 38, 0.35) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(177, 18, 38, 0.3); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(177, 18, 38, 0.5); background-clip: padding-box; }
+
+::selection { background: rgba(212, 175, 55, 0.35); color: #1a1a2e; }
+
+/* Global smoothing — anything that already animates keeps working, this just softens the easing */
+a, button, input, textarea, select {
+  transition-timing-function: var(--ease-out-soft);
+}
+
+:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(177, 18, 38, 0.55) !important;
+  border-radius: 8px;
+}
+
+/* Card hover-lift — opt-in via .modern-card, safe to add alongside existing classes */
+.modern-card {
+  transition: transform 0.35s var(--ease-out-soft), box-shadow 0.35s var(--ease-out-soft), border-color 0.35s var(--ease-out-soft);
+}
+.modern-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg) !important;
+}
+
+/* Button micro-interactions */
+.modern-btn {
+  transition: transform 0.18s var(--ease-out-soft), box-shadow 0.25s var(--ease-out-soft), filter 0.25s var(--ease-out-soft);
+}
+.modern-btn:hover { filter: brightness(1.04); }
+.modern-btn:active { transform: scale(0.97); }
+
+/* Inputs — soften the hard focus border-swap into a glow */
+.modern-input {
+  transition: border-color 0.2s var(--ease-out-soft), box-shadow 0.2s var(--ease-out-soft), background-color 0.2s var(--ease-out-soft);
+}
+.modern-input:focus {
+  box-shadow: 0 0 0 3px rgba(177, 18, 38, 0.12);
+}
+
+/* Scroll-reveal — fade + rise, triggered once via IntersectionObserver in modern.js */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.7s var(--ease-out-soft), transform 0.7s var(--ease-out-soft);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-1 { transition-delay: 0.06s; }
+.reveal-2 { transition-delay: 0.12s; }
+.reveal-3 { transition-delay: 0.18s; }
+.reveal-4 { transition-delay: 0.24s; }
+.reveal-5 { transition-delay: 0.30s; }
+.reveal-6 { transition-delay: 0.36s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .modern-card, .modern-btn, .modern-input { transition: none !important; }
+  .reveal { opacity: 1 !important; transform: none !important; }
+}
+
+/* Soft ambient blob — reusable decorative background accent */
+.ambient-blob {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(60px);
+  pointer-events: none;
+  animation: ambient-drift 8s ease-in-out infinite;
+}
+@keyframes ambient-drift {
+  0%, 100% { transform: scale(1) translate(0, 0); }
+  50% { transform: scale(1.12) translate(2%, -2%); }
+}
+
+/* Skeleton shimmer, available for any future loading states */
+@keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+.skeleton {
+  background: linear-gradient(90deg, #f0eeec 25%, #f8f6f4 37%, #f0eeec 63%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s linear infinite;
+}
