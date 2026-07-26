@@ -56,9 +56,18 @@ class AdminDashboardController extends Controller
             $profilesByUser[(int) $p['user_id']] = $p;
         }
 
+        // Applications with a real digital trainer endorsement on file (application_endorsements)
+        // — these satisfy the "Trainer's Endorsement / Recommendation Letter" requirement exactly
+        // like an uploaded endorsement letter would, so the eligibility checker below doesn't flag
+        // a genuinely-endorsed application as missing that document.
+        $endorsedAppIds = array_flip($pdo->query('SELECT DISTINCT application_id FROM application_endorsements')->fetchAll(\PDO::FETCH_COLUMN));
+
         $eligibilityByApp = [];
         foreach ($applications as $a) {
             $docTypes = array_column($documentsByApp[$a['application_id']] ?? [], 'document_type');
+            if (isset($endorsedAppIds[$a['application_id']])) {
+                $docTypes[] = ARTEMIS_DOCUMENT_CATALOG['endorsement'];
+            }
             $profile = $profilesByUser[(int) $a['user_id']] ?? null;
             $eligibilityByApp[$a['application_id']] = evaluate_application_eligibility($a['type_code'], $profile, $docTypes);
         }
@@ -66,6 +75,31 @@ class AdminDashboardController extends Controller
         // Trainer Level Equivalency Engine data (Art. VI Sec. 17).
         $trainerEvaluations = $pdo->query('SELECT * FROM trainer_evaluations ORDER BY created_at DESC')->fetchAll();
         $talentCategoriesList = $pdo->query('SELECT category_id, name FROM talent_categories ORDER BY name')->fetchAll();
+
+        // Honoraria for one-off Resource Persons, Facilitators, and Judges (Art. VI Sec. 18).
+        $activityHonoraria = $pdo->query('SELECT * FROM activity_honoraria ORDER BY activity_date DESC')->fetchAll();
+
+        // BANTOG Evaluator Panel (Art. VIII Sec. 24).
+        $bantogEvaluators = $pdo->query('SELECT * FROM bantog_evaluators ORDER BY academic_year DESC, evaluator_id')->fetchAll();
+
+        // Collaboration with Culture and Arts Agencies and Organizations (Art. XIII).
+        $partnerOrganizations = $pdo->query('SELECT * FROM partner_organizations ORDER BY updated_at DESC')->fetchAll();
+
+        // Admission Appeals for prospective students (Art. IV Sec. 11).
+        $admissionAppeals = $pdo->query('SELECT * FROM admission_appeals ORDER BY submitted_at DESC')->fetchAll();
+
+        // Academic Support: students on probation + active mentorships (Art. V Sec. 15).
+        $probationStudents = $pdo->query(
+            "SELECT p.user_id, p.probation_reason, p.probation_started_at, u.first_name, u.last_name, u.id_number, u.course
+             FROM performer_profiles p JOIN users u ON u.user_id = p.user_id
+             WHERE p.probation_status = 'Probation' ORDER BY p.probation_started_at DESC"
+        )->fetchAll();
+        $activeMentorships = $pdo->query(
+            "SELECT m.*, u.first_name, u.last_name, u.id_number
+             FROM student_mentorships m JOIN users u ON u.user_id = m.student_user_id
+             WHERE m.status = 'Active' ORDER BY m.assigned_at DESC"
+        )->fetchAll();
+        $studentRoster = $pdo->query("SELECT user_id, first_name, last_name, id_number FROM users WHERE role = 'student' ORDER BY last_name, first_name")->fetchAll();
 
         $pathfitMatrixJs = [];
         foreach (ARTEMIS_PATHFIT_MATRIX as $standard => $rows) {
@@ -109,6 +143,16 @@ class AdminDashboardController extends Controller
 
         // QEO KPI Tracker data (BatStateU-QEO-OCA-03).
         $qeoKpis = compute_qeo_kpis($pdo);
+
+        // Settings tab — real values from the DB, not the client-only localStorage
+        // placeholder the page used to fall back to.
+        $systemSettings = [
+            'systemName' => get_setting($pdo, 'system_name', 'ARTEMIS'),
+            'institution' => get_setting($pdo, 'institution', 'BatStateU ARASOF-Nasugbu'),
+            'office' => get_setting($pdo, 'office', 'Culture and Arts Office'),
+            'academicYear' => get_setting($pdo, 'academic_year', '2025 – 2026'),
+        ];
+        $adminRoleLabel = 'OCA Administrator';
 
         $modules = [
             ['code' => 'audition_recruitment', 'icon' => 'mic-2', 'label' => 'Audition'],
@@ -156,6 +200,19 @@ class AdminDashboardController extends Controller
              LEFT JOIN application_types t ON t.type_id = e.requires_application_type_id
              ORDER BY e.event_date ASC'
         )->fetchAll();
+
+        // Who RSVP'd to each event, so the admin can mark real Attended/Absent
+        // outcomes after the fact instead of only seeing the expected headcount.
+        $registrationsByEvent = [];
+        $stmt = $pdo->query(
+            'SELECT ea.attendance_id, ea.event_id, ea.status, u.first_name, u.last_name, u.id_number, u.course
+             FROM event_attendance ea JOIN users u ON u.user_id = ea.user_id
+             ORDER BY u.last_name, u.first_name'
+        );
+        foreach ($stmt->fetchAll() as $row) {
+            $registrationsByEvent[$row['event_id']][] = $row;
+        }
+
         $announcements = $pdo->query('SELECT * FROM announcements ORDER BY created_at DESC')->fetchAll();
 
         // Real notifications: a chronological activity feed built from actual status
@@ -195,7 +252,6 @@ class AdminDashboardController extends Controller
         }
         $notifItems = array_slice($notifItems, 0, 8);
 
-        $initials = 'OA';
         $pageTitle = 'Admin Dashboard';
 
         return view('pages.admin_dashboard', get_defined_vars());

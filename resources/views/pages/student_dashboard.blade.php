@@ -10,6 +10,8 @@
 <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/tailwind.css">
 <script src="<?= APP_URL ?>/assets/js/lucide.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="<?= APP_URL ?>/assets/js/qrcode-core.js"></script>
+<script src="<?= APP_URL ?>/assets/js/qrcode-utf8.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/modern.css">
@@ -423,6 +425,54 @@
           </div>
         </div>
         <?php endif; ?>
+
+        <?php if ($benefits): ?>
+        <div class="flex items-center justify-between mt-2">
+          <h2 class="font-bold text-base sm:text-lg" style="color:#1a1a2e;">My Benefits</h2>
+        </div>
+        <div class="flex flex-col gap-3">
+          <?php foreach ($benefits as $b): ?>
+            <div class="modern-card bg-white rounded-2xl border border-gray-100 p-4 sm:p-5" style="box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <div>
+                  <div class="text-sm font-semibold" style="color:#1a1a2e;"><?= e($b['benefit_type']) ?></div>
+                  <div class="text-xs text-gray-400"><?= e($b['academic_year']) ?><?= $b['semester'] ? ' &middot; ' . e($b['semester']) . ' Sem' : '' ?> &middot; Granted <?= format_date($b['granted_at'], 'M j, Y') ?></div>
+                </div>
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold" style="background: <?= $b['status'] === 'Active' ? '#DCFCE7' : '#F3F4F6' ?>; color: <?= $b['status'] === 'Active' ? '#15803D' : '#6B7280' ?>;"><?= e($b['status']) ?></span>
+              </div>
+              <?php if ($b['amount'] !== null): ?>
+                <div class="text-xs text-gray-600 mb-2">Amount: <span class="font-semibold" style="color:#B11226;">Php <?= number_format((float) $b['amount'], 2) ?></span></div>
+              <?php elseif ($b['grade'] !== null): ?>
+                <div class="text-xs text-gray-600 mb-2">Grade: <span class="font-semibold" style="color:#B11226;"><?= number_format((float) $b['grade'], 2) ?></span></div>
+              <?php endif; ?>
+
+              <?php if ($b['benefit_type'] === 'Stipend'): ?>
+                <?php if ($b['completion_submitted_at']): ?>
+                  <div class="rounded-xl p-3 text-xs" style="background:#F0FDF4; border:1px solid #DCFCE7;">
+                    <div class="flex items-center gap-1.5 font-semibold mb-1" style="color:#15803D;"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Completion report submitted <?= format_date($b['completion_submitted_at'], 'M j, Y') ?></div>
+                    <p class="text-gray-600 leading-relaxed"><?= nl2br(e($b['completion_report'])) ?></p>
+                    <?php if ($b['completion_file_path']): ?>
+                      <a href="<?= e(APP_URL . '/' . $b['completion_file_path']) ?>" target="_blank" rel="noopener" class="inline-flex items-center gap-1 mt-2 text-xs font-medium" style="color:#B11226;"><i data-lucide="paperclip" class="w-3 h-3"></i> View attachment</a>
+                    <?php endif; ?>
+                  </div>
+                <?php else: ?>
+                  <details class="border-t border-gray-100 pt-2 mt-1">
+                    <summary class="text-xs font-medium cursor-pointer" style="color:#B11226;">Submit end-of-semester completion report (Art. IX Sec. 34)</summary>
+                    <form method="POST" action="<?= e(APP_URL) ?>/benefits/report" enctype="multipart/form-data" class="flex flex-col gap-2 mt-3">
+                      <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                      <input type="hidden" name="benefit_id" value="<?= (int) $b['benefit_id'] ?>">
+                      <textarea name="completion_report" rows="3" required placeholder="Describe the competitions/activities completed and how the stipend contributed to your artistic development." class="dash-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></textarea>
+                      <input type="file" name="completion_file" accept=".pdf,.jpg,.jpeg,.png,.mp4,.mov" class="text-xs text-gray-500">
+                      <p class="text-[10px] text-gray-400">Optional photo, video, or PDF documentation. Max 20MB.</p>
+                      <button type="submit" class="modern-btn self-start px-4 py-2 rounded-xl text-xs font-semibold text-white" style="background:#B11226;">Submit Report</button>
+                    </form>
+                  </details>
+                <?php endif; ?>
+              <?php endif; ?>
+            </div>
+          <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
       </div>
 
       <!-- PROFILE TAB -->
@@ -452,6 +502,84 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <div class="modern-card bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 flex flex-col items-center text-center" style="box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
+          <h3 class="font-semibold text-sm mb-1 self-start" style="color:#1a1a2e;">Event Check-In QR Code</h3>
+          <p class="text-xs text-gray-500 mb-4 self-start">Ipakita ito sa OCA staff sa pasukan ng event para awtomatikong ma-mark na "Attended" ang pagdalo mo.</p>
+          <div id="checkinQrBox" class="p-3 bg-white rounded-xl border border-gray-200 inline-block"></div>
+          <p class="text-[10px] text-gray-400 mt-3">Personal at hindi dapat ipa-screenshot o ipasa sa iba &mdash; ikaw lang ang gagamit nito.</p>
+        </div>
+
+        <div class="modern-card bg-white rounded-2xl p-5 sm:p-6 border border-gray-100" style="box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
+          <h3 class="font-semibold text-sm mb-1" style="color:#1a1a2e;">Academic Standing</h3>
+          <p class="text-xs text-gray-500 mb-4">Submitted to the Head of OCA at midterm and finals each semester (Art. V Sec. 15-C.1.a, 15-C.3).</p>
+
+          <?php if ($isOnProbation): ?>
+            <div class="rounded-xl p-3.5 mb-4" style="background:#FEE2E2; border:1px solid #FCA5A5;">
+              <div class="flex items-center gap-1.5 font-semibold text-sm mb-1" style="color:#B91C1C;"><i data-lucide="alert-triangle" class="w-4 h-4"></i> On Academic Probation</div>
+              <p class="text-xs leading-relaxed" style="color:#7F1D1D;"><?= e($profile['probation_reason'] ?? '') ?></p>
+              <p class="text-xs mt-1.5" style="color:#7F1D1D;">Per Art. V Sec. 15-D, you're not eligible for Stipend, PATHFit Exemption, or BANTOG Recognition benefits until this is cleared. Submit a new report once you've obtained a passing grade to lift this automatically.</p>
+            </div>
+          <?php else: ?>
+            <div class="rounded-xl p-3 mb-4 flex items-center gap-1.5" style="background:#F0FDF4; border:1px solid #DCFCE7;">
+              <i data-lucide="check-circle" class="w-4 h-4" style="color:#15803D;"></i> <span class="text-xs font-medium" style="color:#15803D;">Good standing — no active probation.</span>
+            </div>
+          <?php endif; ?>
+
+          <?php if ($activeMentorships): ?>
+            <div class="rounded-xl p-3 mb-4" style="background:#FAFAFA; border:1px solid #F0F0F0;">
+              <div class="text-xs font-semibold mb-1.5" style="color:#1a1a2e;">Assigned Mentor(s)</div>
+              <?php foreach ($activeMentorships as $m): ?>
+                <div class="text-xs text-gray-600"><?= e($m['mentor_name']) ?> <span class="text-gray-400">(<?= e($m['reason']) ?>)</span></div>
+              <?php endforeach; ?>
+            </div>
+          <?php endif; ?>
+
+          <details>
+            <summary class="text-xs font-medium cursor-pointer" style="color:#B11226;">Submit grade report (Midterm/Final)</summary>
+            <form method="POST" action="<?= e(APP_URL) ?>/academic/report" class="flex flex-col gap-3 mt-3">
+              <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-xs text-gray-500 block mb-1">Term</label>
+                  <select name="term" required class="dash-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+                    <option value="Midterm">Midterm</option>
+                    <option value="Final">Final</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs text-gray-500 block mb-1">Semester</label>
+                  <select name="semester" required class="dash-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+                    <option value="1st">1st</option>
+                    <option value="2nd">2nd</option>
+                    <option value="Summer">Summer</option>
+                  </select>
+                </div>
+              </div>
+              <div><label class="text-xs text-gray-500 block mb-1">Academic Year</label><input type="text" name="academic_year" required placeholder="e.g. 2026-2027" class="dash-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
+              <div><label class="text-xs text-gray-500 block mb-1">GWA <span class="text-gray-400">(optional)</span></label><input type="number" step="0.01" min="1" max="5" name="gwa" class="dash-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
+              <label class="flex items-start gap-2.5 cursor-pointer">
+                <input type="checkbox" name="has_failing_grade" value="1" class="mt-0.5">
+                <span class="text-xs text-gray-600">I have a failing grade in at least one course this term.</span>
+              </label>
+              <button type="submit" class="modern-btn self-start px-4 py-2 rounded-xl text-xs font-semibold text-white" style="background:#B11226;">Submit Report</button>
+            </form>
+          </details>
+
+          <?php if ($academicReports): ?>
+            <div class="mt-4 pt-3 border-t border-gray-100">
+              <div class="text-xs font-semibold mb-2" style="color:#1a1a2e;">Report History</div>
+              <div class="flex flex-col gap-1.5">
+                <?php foreach ($academicReports as $r): ?>
+                  <div class="flex items-center justify-between text-xs">
+                    <span class="text-gray-500"><?= e($r['term']) ?> &middot; AY <?= e($r['academic_year']) ?> (<?= e($r['semester']) ?> Sem)</span>
+                    <span class="font-medium" style="color: <?= $r['has_failing_grade'] ? '#B91C1C' : '#15803D' ?>;"><?= $r['has_failing_grade'] ? 'Failing grade reported' : 'Passing' ?></span>
+                  </div>
+                <?php endforeach; ?>
+              </div>
+            </div>
+          <?php endif; ?>
         </div>
 
         <div class="modern-card bg-white rounded-2xl p-5 sm:p-6 border border-gray-100" style="box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
@@ -647,6 +775,20 @@
           </div>
         </div>
 
+        <div id="pathfitFieldsContainer" class="hidden flex-col gap-3 p-3 rounded-xl" style="background:#FAFAFA; border:1px solid #F0F0F0;">
+          <div class="text-xs font-semibold" style="color:#1a1a2e;">PATHFit Instructor</div>
+          <div>
+            <label class="text-xs font-medium text-gray-600 block mb-1">Who is your current PATHFit instructor?</label>
+            <select name="pathfit_faculty_id" class="dash-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+              <option value="">Select your instructor&hellip;</option>
+              <?php foreach ($pathfitFaculty as $pf): ?>
+                <option value="<?= (int) $pf['user_id'] ?>"><?= e($pf['first_name'] . ' ' . $pf['last_name']) ?></option>
+              <?php endforeach; ?>
+            </select>
+            <p class="text-xs text-gray-400 mt-1">Your instructor will review this request directly (WI-OCA-04).</p>
+          </div>
+        </div>
+
         <div id="requiredDocsContainer" class="flex flex-col gap-3"></div>
 
         <div>
@@ -738,6 +880,17 @@ var DOC_CATALOG = <?= json_encode(ARTEMIS_DOCUMENT_CATALOG) ?>;
 var DOC_REQUIREMENTS = <?= json_encode(application_document_requirements()) ?>;
 
 lucide.createIcons();
+
+// Event Check-In QR (Art. XII attendance) — encodes the account's unguessable
+// check-in token; OCA staff scan this at the venue to mark real attendance.
+(function () {
+  var box = document.getElementById('checkinQrBox');
+  if (!box) return;
+  var qr = qrcode(0, 'M');
+  qr.addData(<?= json_encode($user['qr_token']) ?>);
+  qr.make();
+  box.innerHTML = qr.createSvgTag(6, 0);
+})();
 
 // Scroll progress bar — fills with scroll depth, same behavior as the landing page
 var scrollProgressBar = document.getElementById('scrollProgressBar');
@@ -899,6 +1052,10 @@ document.querySelectorAll('.apptype-btn').forEach(function (btn) {
     var bantogFields = document.getElementById('bantogFieldsContainer');
     if (typeCode === 'bantog_recognition') { bantogFields.classList.remove('hidden'); bantogFields.classList.add('flex'); }
     else { bantogFields.classList.add('hidden'); bantogFields.classList.remove('flex'); }
+
+    var pathfitFields = document.getElementById('pathfitFieldsContainer');
+    if (typeCode === 'pathfit_exemption') { pathfitFields.classList.remove('hidden'); pathfitFields.classList.add('flex'); }
+    else { pathfitFields.classList.add('hidden'); pathfitFields.classList.remove('flex'); }
 
     renderRequiredDocs(typeCode);
 

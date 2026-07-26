@@ -18,7 +18,7 @@ class AuthController extends Controller
     {
         if (is_logged_in()) {
             $user = current_user();
-            return redirect()->route($user['role'] === 'admin' ? 'admin.dashboard' : 'student.dashboard');
+            return redirect()->route(dashboard_route_for_role($user['role']));
         }
 
         $pageTitle = 'Login';
@@ -103,7 +103,7 @@ class AuthController extends Controller
             );
         }
 
-        return redirect()->route($userRow['role'] === 'admin' ? 'admin.dashboard' : 'home');
+        return redirect()->route($userRow['role'] === 'student' ? 'home' : dashboard_route_for_role($userRow['role']));
     }
 
     /** actions/auth/logout.php */

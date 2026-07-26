@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/tailwind.css">
 <script src="<?= APP_URL ?>/assets/js/lucide.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="<?= APP_URL ?>/assets/js/jsQR.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800&display=swap" rel="stylesheet">
@@ -63,8 +64,8 @@
   <aside class="hidden lg:flex flex-col w-64 min-h-screen fixed left-0 top-0 bottom-0 z-30" style="background: linear-gradient(180deg, #B11226 0%, #7a0d1a 100%);">
     <div class="px-6 py-5 border-b border-white/10">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white font-bold text-sm">OA</div>
-        <div><div class="text-white text-sm font-semibold">OCA Administrator</div><div class="text-red-200 text-xs">Admin &middot; OCA Head</div></div>
+        <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white font-bold text-sm"><?= e(strtoupper(mb_substr($admin['first_name'], 0, 1) . mb_substr($admin['last_name'], 0, 1))) ?></div>
+        <div><div class="text-white text-sm font-semibold"><?= e(trim($admin['first_name'] . ' ' . $admin['last_name'])) ?></div><div class="text-red-200 text-xs">Admin &middot; <?= e($adminRoleLabel) ?></div></div>
       </div>
     </div>
     <nav class="flex-1 px-4 py-4 flex flex-col gap-1 overflow-y-auto">
@@ -76,6 +77,9 @@
       <button data-section="kpi" class="admin-nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left" style="color: rgba(255,255,255,0.7);"><i data-lucide="trending-up" class="w-4 h-4"></i> QEO KPI</button>
       <button data-section="events" class="admin-nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left" style="color: rgba(255,255,255,0.7);"><i data-lucide="calendar" class="w-4 h-4"></i> Events</button>
       <button data-section="announcements" class="admin-nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left" style="color: rgba(255,255,255,0.7);"><i data-lucide="bell" class="w-4 h-4"></i> Announcements</button>
+      <button data-section="partnerships" class="admin-nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left" style="color: rgba(255,255,255,0.7);"><i data-lucide="handshake" class="w-4 h-4"></i> Partnerships</button>
+      <button data-section="appeals" class="admin-nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left" style="color: rgba(255,255,255,0.7);"><i data-lucide="user-plus" class="w-4 h-4"></i> Admission Appeals</button>
+      <button data-section="academic" class="admin-nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left" style="color: rgba(255,255,255,0.7);"><i data-lucide="book-user" class="w-4 h-4"></i> Academic Support</button>
       <button data-section="reports" class="admin-nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left" style="color: rgba(255,255,255,0.7);"><i data-lucide="bar-chart-3" class="w-4 h-4"></i> Reports</button>
       <button data-section="settings" class="admin-nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left" style="color: rgba(255,255,255,0.7);"><i data-lucide="settings" class="w-4 h-4"></i> Settings</button>
 
@@ -151,7 +155,7 @@
           <div class="absolute right-0 top-0 bottom-0 opacity-5"><i data-lucide="palette" class="w-64 h-64 -mt-8 -mr-8"></i></div>
           <div class="relative">
             <div class="text-red-200 text-sm mb-1">Good day,</div>
-            <h2 class="text-2xl font-bold text-white">OCA Administrator</h2>
+            <h2 class="text-2xl font-bold text-white"><?= e($admin['first_name']) ?></h2>
             <p class="text-red-100 text-sm mt-1">There are <span class="font-semibold text-yellow-300"><?= (int) $statusCounts['Pending'] ?> pending</span> applications requiring your attention.</p>
             <button type="button" data-section-link="applications" class="admin-nav-jump modern-btn mt-4 px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 w-fit transition-opacity hover:opacity-90" style="background:#D4AF37; color:#1a1a2e;">Review Applications <i data-lucide="chevron-down" class="w-4 h-4" style="transform:rotate(-90deg);"></i></button>
           </div>
@@ -337,6 +341,32 @@
             </table>
           </div>
         </div>
+
+        <div class="modern-card bg-white rounded-2xl border border-gray-100 p-5" style="box-shadow: 0 1px 6px rgba(0,0,0,0.06);">
+          <h3 class="font-semibold text-sm mb-1" style="color:#1a1a2e;">Resource Persons, Facilitators &amp; Judges Honoraria</h3>
+          <p class="text-xs text-gray-600 mb-4">One-off honoraria for invited experts in culture and arts activities and competitions (Art. VI Sec. 18) — separate from the regular Training Specialist contracts above.</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
+            <div><label for="honorariumNameInput" class="text-xs text-gray-600 block mb-1">Name</label><input id="honorariumNameInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="e.g. Maria Santos"></div>
+            <div>
+              <label for="honorariumRoleInput" class="text-xs text-gray-600 block mb-1">Role</label>
+              <select id="honorariumRoleInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+                <option value="Resource Person">Resource Person</option>
+                <option value="Facilitator">Facilitator</option>
+                <option value="Judge">Judge</option>
+              </select>
+            </div>
+            <div><label for="honorariumActivityInput" class="text-xs text-gray-600 block mb-1">Activity</label><input id="honorariumActivityInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="e.g. BANTOG Awards Night"></div>
+            <div><label for="honorariumDateInput" class="text-xs text-gray-600 block mb-1">Activity Date</label><input type="date" id="honorariumDateInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
+            <div><label for="honorariumAmountInput" class="text-xs text-gray-600 block mb-1">Amount (Php)</label><input type="number" step="0.01" min="0" id="honorariumAmountInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="e.g. 2000"></div>
+          </div>
+          <button type="button" id="saveHonorariumBtn" class="modern-btn px-4 py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2" style="background:#B11226;"><i data-lucide="plus" class="w-4 h-4"></i> Add Honorarium Record</button>
+          <div class="overflow-x-auto mt-4 border-t border-gray-100 pt-4">
+            <table class="w-full text-sm">
+              <thead><tr style="background:#F9FAFB;"><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Name</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Role</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Activity</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Date</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Amount</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Action</th></tr></thead>
+              <tbody id="honorariaTableBody"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- TALENT MATCH -->
@@ -456,6 +486,30 @@
           <h3 class="font-semibold text-sm mb-1" style="color:#1a1a2e;">BANTOG Composite Ranking</h3><p class="text-xs text-gray-600 mb-4">Training (20) + Production (40) + Award (40) = 100, per Art. VIII Sec. 23. Highest score is flagged as the Pinaka-BANTOG candidate; a score without matching evidence is flagged for review.</p>
           <div id="bantogRankingList" class="flex flex-col gap-2"></div>
         </div>
+
+        <div class="modern-card bg-white rounded-2xl border border-gray-100 p-5" style="box-shadow: 0 1px 6px rgba(0,0,0,0.06);">
+          <h3 class="font-semibold text-sm mb-1" style="color:#1a1a2e;">BANTOG Evaluator Panel</h3><p class="text-xs text-gray-600 mb-4">The Director shall submit this list each year for endorsement to the University President (Art. VIII Sec. 24). Typical composition: Head of Culture and Arts (per constituent campus), Director for Culture and Arts, Director for Student Affairs and Services, University Student Council representative, External Evaluator.</p>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            <div><label for="evaluatorNameInput" class="text-xs text-gray-600 block mb-1">Name</label><input id="evaluatorNameInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="e.g. Dr. Charmaine Rose I. Triviño"></div>
+            <div><label for="evaluatorPositionInput" class="text-xs text-gray-600 block mb-1">Position</label><input id="evaluatorPositionInput" list="evaluatorPositionList" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="e.g. External Evaluator">
+              <datalist id="evaluatorPositionList">
+                <option value="Head of Culture and Arts Office">
+                <option value="Director for Culture and Arts Office">
+                <option value="Director for Student Affairs and Services">
+                <option value="University Student Council Representative">
+                <option value="External Evaluator">
+              </datalist>
+            </div>
+            <div><label for="evaluatorYearInput" class="text-xs text-gray-600 block mb-1">Academic Year</label><input id="evaluatorYearInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="e.g. 2026-2027"></div>
+          </div>
+          <button type="button" id="saveEvaluatorBtn" class="modern-btn px-4 py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2" style="background:#B11226;"><i data-lucide="plus" class="w-4 h-4"></i> Add Evaluator</button>
+          <div class="overflow-x-auto mt-4 border-t border-gray-100 pt-4">
+            <table class="w-full text-sm">
+              <thead><tr style="background:#F9FAFB;"><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Name</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Position</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Academic Year</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Action</th></tr></thead>
+              <tbody id="evaluatorsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- EVENTS -->
@@ -476,24 +530,133 @@
         <div id="annList" class="flex flex-col gap-4"></div>
       </div>
 
+      <!-- PARTNERSHIPS -->
+      <div class="admin-section hidden flex-col gap-6" data-section="partnerships">
+        <div><span class="text-[10px] font-semibold uppercase tracking-wider block mb-1" style="color:#B11226;">Partnerships</span><h2 class="font-bold text-base sm:text-lg" style="color:#1a1a2e;">Collaboration with Culture and Arts Agencies and Organizations</h2><p class="text-xs text-gray-500 mt-0.5">Tracks partner organizations through survey, proposal, approval, and MOA stages (Art. XIII Sec. 50&ndash;55).</p></div>
+
+        <div class="modern-card bg-white rounded-2xl border border-gray-100 p-5" style="box-shadow: 0 1px 6px rgba(0,0,0,0.06);">
+          <h3 class="font-semibold text-sm mb-4" id="partnerFormTitle" style="color:#1a1a2e;">Add Partner Organization</h3>
+          <input type="hidden" id="partnerIdInput" value="">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
+            <div><label for="partnerNameInput" class="text-xs text-gray-600 block mb-1">Organization Name</label><input id="partnerNameInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="e.g. National Commission for Culture and the Arts"></div>
+            <div>
+              <label for="partnerTypeInput" class="text-xs text-gray-600 block mb-1">Type</label>
+              <select id="partnerTypeInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+                <option>Government Cultural Agency</option>
+                <option>International Cultural Institution</option>
+                <option>NGO</option>
+                <option>Cultural Institution</option>
+                <option>Community/Indigenous Group</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div>
+              <label for="partnerStatusInput" class="text-xs text-gray-600 block mb-1">Status</label>
+              <select id="partnerStatusInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+                <option>Prospective</option>
+                <option>Proposal Submitted</option>
+                <option>Approved</option>
+                <option>Active MOA</option>
+                <option>Completed</option>
+                <option>Declined</option>
+              </select>
+            </div>
+            <div><label for="partnerContactPersonInput" class="text-xs text-gray-600 block mb-1">Contact Person</label><input id="partnerContactPersonInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="e.g. Juan Dela Cruz"></div>
+            <div><label for="partnerContactEmailInput" class="text-xs text-gray-600 block mb-1">Contact Email</label><input type="email" id="partnerContactEmailInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="e.g. contact@ncca.gov.ph"></div>
+            <div><label for="partnerContactPhoneInput" class="text-xs text-gray-600 block mb-1">Contact Phone</label><input id="partnerContactPhoneInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="e.g. 0917-000-0000"></div>
+            <div><label for="partnerMoaSignedInput" class="text-xs text-gray-600 block mb-1">MOA Signed Date</label><input type="date" id="partnerMoaSignedInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
+            <div><label for="partnerMoaExpiryInput" class="text-xs text-gray-600 block mb-1">MOA Expiry Date</label><input type="date" id="partnerMoaExpiryInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
+          </div>
+          <div class="mb-3"><label for="partnerProposalInput" class="text-xs text-gray-600 block mb-1">Proposal Summary (Sec. 51)</label><textarea id="partnerProposalInput" rows="2" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="Objectives, description of the collaboration, timeline, budget/resource requirements..."></textarea></div>
+          <div class="mb-4"><label for="partnerNotesInput" class="text-xs text-gray-600 block mb-1">Monitoring Notes (Sec. 55)</label><textarea id="partnerNotesInput" rows="2" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="Progress updates, evaluation results..."></textarea></div>
+          <div class="flex gap-3">
+            <button type="button" id="partnerResetBtn" class="hidden px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50">Cancel Edit</button>
+            <button type="button" id="savePartnerBtn" class="modern-btn px-4 py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2" style="background:#B11226;"><i data-lucide="plus" class="w-4 h-4"></i> <span id="savePartnerLabel">Add Partner</span></button>
+          </div>
+        </div>
+
+        <div class="modern-card bg-white rounded-2xl border border-gray-100 overflow-hidden" style="box-shadow: 0 1px 6px rgba(0,0,0,0.06);">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead><tr style="background:#F9FAFB;"><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Organization</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Type</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Contact</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Status</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">MOA Dates</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Action</th></tr></thead>
+              <tbody id="partnersTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMISSION APPEALS -->
+      <div class="admin-section hidden flex-col gap-6" data-section="appeals">
+        <div><span class="text-[10px] font-semibold uppercase tracking-wider block mb-1" style="color:#B11226;">Admission Appeals</span><h2 class="font-bold text-base sm:text-lg" style="color:#1a1a2e;">Recruitment through Exceptional Achievements</h2><p class="text-xs text-gray-500 mt-0.5">Prospective students appealing for admission based on cultural/artistic excellence (Art. IV Sec. 11; BOR Resolution No. 44 S. 2024). Public applicants submit at <span class="font-mono">/appeal/apply</span> &mdash; no ARTEMIS account needed.</p></div>
+        <div id="appealsList" class="flex flex-col gap-3"></div>
+      </div>
+
+      <!-- ACADEMIC SUPPORT -->
+      <div class="admin-section hidden flex-col gap-6" data-section="academic">
+        <div><span class="text-[10px] font-semibold uppercase tracking-wider block mb-1" style="color:#B11226;">Academic Support</span><h2 class="font-bold text-base sm:text-lg" style="color:#1a1a2e;">Tutoring &amp; Mentoring Program</h2><p class="text-xs text-gray-500 mt-0.5">Students who report a failing grade are automatically placed on academic probation, restricting RPAG grant eligibility until cleared (Art. V Sec. 15-C, 15-D).</p></div>
+
+        <div class="modern-card bg-white rounded-2xl border border-gray-100 overflow-hidden" style="box-shadow: 0 1px 6px rgba(0,0,0,0.06);">
+          <div class="px-5 py-4 border-b border-gray-100"><h3 class="font-semibold text-sm" style="color:#1a1a2e;">Students on Probation (Sec. 15-D)</h3></div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead><tr style="background:#F9FAFB;"><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Student</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Reason</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Since</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Action</th></tr></thead>
+              <tbody id="probationTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="modern-card bg-white rounded-2xl border border-gray-100 p-5" style="box-shadow: 0 1px 6px rgba(0,0,0,0.06);">
+          <h3 class="font-semibold text-sm mb-4" style="color:#1a1a2e;">Assign a Mentor (Sec. 15-C.2)</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            <div>
+              <label for="mentorshipStudentInput" class="text-xs text-gray-600 block mb-1">Student</label>
+              <select id="mentorshipStudentInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+                <option value="">Select a student&hellip;</option>
+                <?php foreach ($studentRoster as $s): ?><option value="<?= (int) $s['user_id'] ?>"><?= e($s['first_name'] . ' ' . $s['last_name']) ?> (<?= e($s['id_number']) ?>)</option><?php endforeach; ?>
+              </select>
+            </div>
+            <div><label for="mentorshipNameInput" class="text-xs text-gray-600 block mb-1">Mentor Name</label><input id="mentorshipNameInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="e.g. Prof. Angelica Reyes"></div>
+            <div>
+              <label for="mentorshipReasonInput" class="text-xs text-gray-600 block mb-1">Reason</label>
+              <select id="mentorshipReasonInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+                <option>Voluntary Request</option>
+                <option>Failing Grade</option>
+                <option>Appeal Admission Recruit</option>
+              </select>
+            </div>
+          </div>
+          <button type="button" id="assignMentorBtn" class="modern-btn px-4 py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2" style="background:#B11226;"><i data-lucide="plus" class="w-4 h-4"></i> Assign Mentor</button>
+        </div>
+
+        <div class="modern-card bg-white rounded-2xl border border-gray-100 overflow-hidden" style="box-shadow: 0 1px 6px rgba(0,0,0,0.06);">
+          <div class="px-5 py-4 border-b border-gray-100"><h3 class="font-semibold text-sm" style="color:#1a1a2e;">Active Mentorships</h3></div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead><tr style="background:#F9FAFB;"><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Student</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Mentor</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Reason</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Assigned</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Action</th></tr></thead>
+              <tbody id="mentorshipsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- SETTINGS -->
       <div class="admin-section hidden flex-col gap-6 max-w-2xl" data-section="settings">
         <div><h2 class="sr-only">System Settings</h2></div>
         <div class="modern-card bg-white rounded-2xl p-6 border border-gray-100" style="box-shadow: 0 1px 6px rgba(0,0,0,0.06);">
           <h3 class="font-semibold text-sm mb-4" style="color:#1a1a2e;">System Information</h3>
           <div class="flex flex-col gap-3">
-            <div><label for="set_systemName" class="text-xs text-gray-600 block mb-1">System Name</label><input id="set_systemName" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
-            <div><label for="set_institution" class="text-xs text-gray-600 block mb-1">Institution</label><input id="set_institution" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
-            <div><label for="set_office" class="text-xs text-gray-600 block mb-1">Office</label><input id="set_office" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
-            <div><label for="set_academicYear" class="text-xs text-gray-600 block mb-1">Academic Year</label><input id="set_academicYear" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
+            <div><label for="set_systemName" class="text-xs text-gray-600 block mb-1">System Name</label><input id="set_systemName" value="<?= e($systemSettings['systemName']) ?>" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
+            <div><label for="set_institution" class="text-xs text-gray-600 block mb-1">Institution</label><input id="set_institution" value="<?= e($systemSettings['institution']) ?>" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
+            <div><label for="set_office" class="text-xs text-gray-600 block mb-1">Office</label><input id="set_office" value="<?= e($systemSettings['office']) ?>" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
+            <div><label for="set_academicYear" class="text-xs text-gray-600 block mb-1">Academic Year</label><input id="set_academicYear" value="<?= e($systemSettings['academicYear']) ?>" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
           </div>
         </div>
         <div class="modern-card bg-white rounded-2xl p-6 border border-gray-100" style="box-shadow: 0 1px 6px rgba(0,0,0,0.06);">
           <h3 class="font-semibold text-sm mb-4" style="color:#1a1a2e;">Admin Account</h3>
           <div class="flex flex-col gap-3">
-            <div><label for="set_adminName" class="text-xs text-gray-600 block mb-1">Administrator Name</label><input id="set_adminName" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
-            <div><label for="set_email" class="text-xs text-gray-600 block mb-1">Email</label><input id="set_email" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
-            <div><label for="set_role" class="text-xs text-gray-600 block mb-1">Role</label><input id="set_role" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
+            <div><label for="set_adminName" class="text-xs text-gray-600 block mb-1">Administrator Name</label><input id="set_adminName" value="<?= e(trim($admin['first_name'] . ' ' . $admin['last_name'])) ?>" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
+            <div><label for="set_email" class="text-xs text-gray-600 block mb-1">Email</label><input id="set_email" type="email" value="<?= e($admin['email']) ?>" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
+            <div><label for="set_role" class="text-xs text-gray-600 block mb-1">Role</label><input id="set_role" value="<?= e($adminRoleLabel) ?>" readonly class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-gray-50 text-gray-500"></div>
           </div>
         </div>
         <button type="button" id="saveSettingsBtn" class="modern-btn px-6 py-3 rounded-xl text-sm font-semibold text-white w-fit flex items-center gap-2 hover:opacity-90 transition-opacity" style="background:#B11226;"><i data-lucide="save" class="w-4 h-4"></i> <span id="saveSettingsLabel">Save Changes</span></button>
@@ -524,6 +687,9 @@
     <button type="button" data-section-link="compliance" class="more-menu-item flex items-center gap-3 w-full px-3 py-3.5 rounded-xl mb-1 transition-all" style="color:#374151;"><i data-lucide="shield-alert" class="w-5 h-5"></i><span class="text-sm font-medium">Compliance</span></button>
     <button type="button" data-section-link="kpi" class="more-menu-item flex items-center gap-3 w-full px-3 py-3.5 rounded-xl mb-1 transition-all" style="color:#374151;"><i data-lucide="trending-up" class="w-5 h-5"></i><span class="text-sm font-medium">QEO KPI Tracker</span></button>
     <button type="button" data-section-link="reports" class="more-menu-item flex items-center gap-3 w-full px-3 py-3.5 rounded-xl mb-1 transition-all" style="color:#374151;"><i data-lucide="bar-chart-3" class="w-5 h-5"></i><span class="text-sm font-medium">Reports & Analytics</span></button>
+    <button type="button" data-section-link="partnerships" class="more-menu-item flex items-center gap-3 w-full px-3 py-3.5 rounded-xl mb-1 transition-all" style="color:#374151;"><i data-lucide="handshake" class="w-5 h-5"></i><span class="text-sm font-medium">Partnerships</span></button>
+    <button type="button" data-section-link="appeals" class="more-menu-item flex items-center gap-3 w-full px-3 py-3.5 rounded-xl mb-1 transition-all" style="color:#374151;"><i data-lucide="user-plus" class="w-5 h-5"></i><span class="text-sm font-medium">Admission Appeals</span></button>
+    <button type="button" data-section-link="academic" class="more-menu-item flex items-center gap-3 w-full px-3 py-3.5 rounded-xl mb-1 transition-all" style="color:#374151;"><i data-lucide="book-user" class="w-5 h-5"></i><span class="text-sm font-medium">Academic Support</span></button>
     <button type="button" data-section-link="settings" class="more-menu-item flex items-center gap-3 w-full px-3 py-3.5 rounded-xl mb-1 transition-all" style="color:#374151;"><i data-lucide="settings" class="w-5 h-5"></i><span class="text-sm font-medium">System Settings</span></button>
     <div class="border-t border-gray-100 mt-2 pt-3">
       <a href="<?= e(APP_URL) ?>/logout" class="flex items-center gap-3 w-full px-3 py-3.5 rounded-xl text-gray-500"><i data-lucide="log-out" class="w-5 h-5"></i><span class="text-sm font-medium">Sign Out</span></a>
@@ -581,9 +747,22 @@
           <div><label for="bantogScoreProduction" class="text-[10px] text-gray-500 block mb-1">Production (0-40)</label><input type="number" id="bantogScoreProduction" min="0" max="40" class="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-xs"></div>
           <div><label for="bantogScoreAward" class="text-[10px] text-gray-500 block mb-1">Award Achieved (0-40)</label><input type="number" id="bantogScoreAward" min="0" max="40" class="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-xs"></div>
         </div>
+        <div class="mb-2">
+          <label for="bantogAwardTitle" class="text-[10px] text-gray-500 block mb-1">Final Award / Honor (Art. VIII Sec. 26 — set once the committee decides a winner)</label>
+          <select id="bantogAwardTitle" class="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-xs bg-white">
+            <option value="">&mdash; Not yet decided &mdash;</option>
+            <?php foreach (ARTEMIS_BANTOG_AWARDS as $group => $titles): ?>
+              <optgroup label="<?= e($group) ?>">
+                <?php foreach ($titles as $title): ?>
+                  <option value="<?= e($title) ?>"><?= e($title) ?></option>
+                <?php endforeach; ?>
+              </optgroup>
+            <?php endforeach; ?>
+          </select>
+        </div>
         <div class="flex items-center justify-between">
           <p class="text-xs text-gray-600">Total: <span class="font-semibold" style="color:#B11226;" id="bantogScoreTotal">0</span>/100</p>
-          <button type="button" id="saveBantogScoreBtn" class="px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#B11226; color:#fff;">Save Score</button>
+          <button type="button" id="saveBantogScoreBtn" class="px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#B11226; color:#fff;">Save Score &amp; Award</button>
         </div>
       </div>
       <div id="viewAppBenefitBox" class="hidden bg-green-50 rounded-xl p-3 border border-green-100">
@@ -692,10 +871,54 @@
         </select>
         <p class="text-xs text-gray-400 mt-1">For "By Invitation" events like BANTOG Awards Night — only students whose linked application was approved can register.</p>
       </div>
+      <div>
+        <label for="eventResultInput" class="text-xs text-gray-500 block mb-1">Post-Competition Result <span class="text-gray-400">(Art. XII Sec. 48 — fill in once the competition has concluded)</span></label>
+        <textarea id="eventResultInput" rows="2" placeholder="e.g. Champion, Folkloric Dance category — Regional Cultural Festival 2026" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></textarea>
+      </div>
       <div class="flex gap-3 pt-1">
         <button type="button" id="eventCancelBtn" class="flex-1 py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50">Cancel</button>
         <button type="button" id="eventSaveBtn" class="modern-btn flex-1 py-2.5 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-40 hover:opacity-90" style="background:#B11226;"><i data-lucide="save" class="w-4 h-4"></i> <span id="eventSaveLabel">Add Event</span></button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- EVENT ATTENDEES MODAL -->
+<div id="attendeesModal" class="hidden fixed inset-0 z-50 items-end sm:items-center justify-center sm:p-4 bg-black/50 modal-backdrop-anim">
+  <div class="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-lg overflow-hidden relative modal-panel-anim" style="max-height:88vh; box-shadow: 0 24px 60px rgba(0,0,0,0.22);">
+    <div class="sm:hidden w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3"></div>
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100" style="background: linear-gradient(135deg, #B11226, #7a0d1a);">
+      <div><h3 class="font-bold text-white text-sm">Attendees</h3><p class="text-xs text-white/70" id="attendeesModalSubtitle"></p></div>
+      <button type="button" id="attendeesModalCloseBtn" class="w-10 h-10 -mr-2 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors flex-shrink-0" aria-label="Close attendees list"><i data-lucide="x" class="w-5 h-5 text-white/70"></i></button>
+    </div>
+    <div class="overflow-y-auto" style="max-height:60vh;">
+      <table class="w-full text-sm">
+        <thead class="sticky top-0"><tr style="background:#F9FAFB;"><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Student</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Status</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Action</th></tr></thead>
+        <tbody id="attendeesTableBody"></tbody>
+      </table>
+    </div>
+    <div class="px-5 py-3.5 border-t border-gray-100">
+      <button type="button" id="openScanModeBtn" class="modern-btn w-full py-2.5 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 hover:opacity-90 transition-opacity" style="background:#1a1a2e;"><i data-lucide="qr-code" class="w-4 h-4"></i> Scan QR to Check In</button>
+    </div>
+  </div>
+</div>
+
+<!-- QR SCAN MODE MODAL -->
+<div id="scanModal" class="hidden fixed inset-0 z-[60] items-end sm:items-center justify-center sm:p-4 bg-black/70 modal-backdrop-anim">
+  <div class="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-sm overflow-hidden relative modal-panel-anim" style="box-shadow: 0 24px 60px rgba(0,0,0,0.3);">
+    <div class="sm:hidden w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3"></div>
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100" style="background:#1a1a2e;">
+      <div><h3 class="font-bold text-white text-sm">Scan to Check In</h3><p class="text-xs text-white/60" id="scanModalSubtitle"></p></div>
+      <button type="button" id="scanModalCloseBtn" class="w-10 h-10 -mr-2 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors flex-shrink-0" aria-label="Close scanner"><i data-lucide="x" class="w-5 h-5 text-white/70"></i></button>
+    </div>
+    <div class="p-5 flex flex-col gap-3">
+      <div class="relative rounded-xl overflow-hidden bg-black" style="aspect-ratio:1/1;">
+        <video id="scanVideo" class="w-full h-full object-cover" playsinline muted></video>
+        <div class="absolute inset-0 pointer-events-none" style="box-shadow: inset 0 0 0 3px rgba(255,255,255,0.35);"></div>
+      </div>
+      <canvas id="scanCanvas" class="hidden"></canvas>
+      <div id="scanStatusBox" class="rounded-xl p-3 text-center text-xs font-medium" style="background:#F3F4F6; color:#6B7280;">Point the camera at a student's QR code.</div>
+      <div id="scanCameraError" class="hidden rounded-xl p-3 text-center text-xs" style="background:#FEE2E2; color:#B91C1C;"></div>
     </div>
   </div>
 </div>
@@ -711,6 +934,7 @@
     <div class="p-5 flex flex-col gap-3.5" style="padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));">
       <input type="hidden" id="annIdInput">
       <div><label for="annTitleInput" class="text-xs text-gray-500 block mb-1">Title</label><input id="annTitleInput" placeholder="Announcement title..." class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
+      <div><label for="annContentInput" class="text-xs text-gray-500 block mb-1">Message / Details</label><textarea id="annContentInput" rows="3" placeholder="Details students will see under the title..." class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none resize-none"></textarea></div>
       <div><label for="annTypeInput" class="text-xs text-gray-500 block mb-1">Type</label>
         <select id="annTypeInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
           <?php foreach (['Audition','Stipend','Academic','General','Event'] as $t): ?><option><?= e($t) ?></option><?php endforeach; ?>
@@ -763,6 +987,7 @@ var APPLICATIONS = <?= json_encode(array_map(function ($a) use ($documentsByApp,
         'details' => $a['details'],
         'hoursClaimed' => $a['hours_claimed'] !== null ? (float) $a['hours_claimed'] : null,
         'bantogCategory' => $a['bantog_category'],
+        'bantogAwardTitle' => $a['bantog_award_title'],
         'bantogScoreTraining' => $a['bantog_score_training'] !== null ? (int) $a['bantog_score_training'] : null,
         'bantogScoreProduction' => $a['bantog_score_production'] !== null ? (int) $a['bantog_score_production'] : null,
         'bantogScoreAward' => $a['bantog_score_award'] !== null ? (int) $a['bantog_score_award'] : null,
@@ -782,12 +1007,21 @@ var APPLICATIONS = <?= json_encode(array_map(function ($a) use ($documentsByApp,
     ];
 }, $applications), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
 
-var EVENTS = <?= json_encode(array_map(function ($e) {
-    return ['id' => (int) $e['event_id'], 'title' => $e['title'], 'eventType' => $e['event_type'], 'date' => format_date($e['event_date'], 'F j, Y'), 'rawDate' => $e['event_date'], 'location' => $e['location'], 'attendees' => (int) $e['expected_attendees'], 'status' => $e['status'], 'requiresTravel' => (bool) $e['requires_travel'], 'requiresTypeCode' => $e['requires_type_code']];
+var EVENTS = <?= json_encode(array_map(function ($e) use ($registrationsByEvent) {
+    $registrations = array_map(function ($r) {
+        return [
+            'attendanceId' => (int) $r['attendance_id'],
+            'name' => $r['first_name'] . ' ' . $r['last_name'],
+            'idNumber' => $r['id_number'],
+            'course' => $r['course'],
+            'status' => $r['status'],
+        ];
+    }, $registrationsByEvent[$e['event_id']] ?? []);
+    return ['id' => (int) $e['event_id'], 'title' => $e['title'], 'eventType' => $e['event_type'], 'date' => format_date($e['event_date'], 'F j, Y'), 'rawDate' => $e['event_date'], 'location' => $e['location'], 'attendees' => (int) $e['expected_attendees'], 'status' => $e['status'], 'requiresTravel' => (bool) $e['requires_travel'], 'requiresTypeCode' => $e['requires_type_code'], 'competitionResult' => $e['competition_result'], 'registrations' => $registrations];
 }, $events), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
 
 var ANNOUNCEMENTS = <?= json_encode(array_map(function ($a) {
-    return ['id' => (int) $a['announcement_id'], 'title' => $a['title'], 'date' => format_date($a['created_at'], 'F j, Y'), 'type' => $a['tag'], 'audience' => $a['audience'] ?? 'All Students'];
+    return ['id' => (int) $a['announcement_id'], 'title' => $a['title'], 'content' => $a['content'], 'date' => format_date($a['created_at'], 'F j, Y'), 'type' => $a['tag'], 'audience' => $a['audience'] ?? 'All Students'];
 }, $announcements), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
 
 var TRAINER_RUBRIC = <?= json_encode(ARTEMIS_TRAINER_RUBRIC_CRITERIA) ?>;
@@ -805,6 +1039,53 @@ var TRAINER_EVALUATIONS = <?= json_encode(array_map(function ($t) {
     ];
 }, $trainerEvaluations), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
 var PATHFIT_MATRIX = <?= json_encode($pathfitMatrixJs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+var HONORARIA = <?= json_encode(array_map(function ($h) {
+    return [
+        'id' => (int) $h['honorarium_id'],
+        'personName' => $h['person_name'],
+        'role' => $h['role'],
+        'activityName' => $h['activity_name'],
+        'activityDate' => format_date($h['activity_date'], 'M j, Y'),
+        'discipline' => $h['discipline'],
+        'amount' => $h['amount'] !== null ? (float) $h['amount'] : null,
+    ];
+}, $activityHonoraria), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+var BANTOG_EVALUATORS = <?= json_encode(array_map(function ($e) {
+    return ['id' => (int) $e['evaluator_id'], 'name' => $e['name'], 'position' => $e['position'], 'academicYear' => $e['academic_year']];
+}, $bantogEvaluators), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+var PARTNERS = <?= json_encode(array_map(function ($p) {
+    return [
+        'id' => (int) $p['partner_id'], 'name' => $p['name'], 'orgType' => $p['org_type'],
+        'contactPerson' => $p['contact_person'], 'contactEmail' => $p['contact_email'], 'contactPhone' => $p['contact_phone'],
+        'status' => $p['status'], 'proposalSummary' => $p['proposal_summary'], 'notes' => $p['notes'],
+        'moaSignedDate' => $p['moa_signed_date'], 'moaExpiryDate' => $p['moa_expiry_date'],
+    ];
+}, $partnerOrganizations), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+
+var APPEALS = <?= json_encode(array_map(function ($a) {
+    return [
+        'id' => (int) $a['appeal_id'], 'fullName' => $a['full_name'], 'email' => $a['email'],
+        'contactNumber' => $a['contact_number'], 'secondarySchool' => $a['secondary_school'], 'campus' => $a['campus'],
+        'achievements' => $a['achievements_summary'], 'academicStanding' => $a['academic_standing_note'],
+        'certificatesUrl' => $a['certificates_path'] ? APP_URL . '/' . $a['certificates_path'] : null,
+        'recommendationUrl' => $a['recommendation_letter_path'] ? APP_URL . '/' . $a['recommendation_letter_path'] : null,
+        'schoolStatementUrl' => $a['school_statement_path'] ? APP_URL . '/' . $a['school_statement_path'] : null,
+        'status' => $a['status'], 'remarks' => $a['remarks'], 'submittedAt' => format_date($a['submitted_at'], 'M j, Y'),
+    ];
+}, $admissionAppeals), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+
+var PROBATION_STUDENTS = <?= json_encode(array_map(function ($p) {
+    return [
+        'userId' => (int) $p['user_id'], 'name' => $p['first_name'] . ' ' . $p['last_name'], 'idNumber' => $p['id_number'],
+        'course' => $p['course'], 'reason' => $p['probation_reason'], 'since' => format_date($p['probation_started_at'], 'M j, Y'),
+    ];
+}, $probationStudents), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+var MENTORSHIPS = <?= json_encode(array_map(function ($m) {
+    return [
+        'id' => (int) $m['mentorship_id'], 'studentName' => $m['first_name'] . ' ' . $m['last_name'], 'idNumber' => $m['id_number'],
+        'mentorName' => $m['mentor_name'], 'reason' => $m['reason'], 'assignedAt' => format_date($m['assigned_at'], 'M j, Y'),
+    ];
+}, $activeMentorships), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
 
 var PERFORMERS = <?= json_encode($performersWithPlacement, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
 var FACULTY_COMPLAINTS = <?= json_encode(array_map(function ($c) {
@@ -845,7 +1126,7 @@ function runCountUps(scope) {
 runCountUps(document.querySelector('.admin-section[data-section="dashboard"]'));
 
 // ---------- Section navigation ----------
-var titles = { dashboard: 'Admin Dashboard', applications: 'Applications', trainers: 'Trainer Evaluation', talent: 'Talent Match', compliance: 'Compliance', kpi: 'QEO KPI Tracker', reports: 'Reports & Analytics', events: 'Events Management', announcements: 'Announcements', settings: 'System Settings' };
+var titles = { dashboard: 'Admin Dashboard', applications: 'Applications', trainers: 'Trainer Evaluation', talent: 'Talent Match', compliance: 'Compliance', kpi: 'QEO KPI Tracker', reports: 'Reports & Analytics', events: 'Events Management', announcements: 'Announcements', partnerships: 'Partnerships', appeals: 'Admission Appeals', academic: 'Academic Support', settings: 'System Settings' };
 var state = { section: 'dashboard', module: '', filterStatus: 'All', search: '', highlightedCode: null, processingCode: null };
 
 function setSection(sec) {
@@ -1182,6 +1463,7 @@ function openViewApp(code) {
     document.getElementById('bantogScoreTraining').value = app.bantogScoreTraining !== null ? app.bantogScoreTraining : '';
     document.getElementById('bantogScoreProduction').value = app.bantogScoreProduction !== null ? app.bantogScoreProduction : '';
     document.getElementById('bantogScoreAward').value = app.bantogScoreAward !== null ? app.bantogScoreAward : '';
+    document.getElementById('bantogAwardTitle').value = app.bantogAwardTitle || '';
     updateBantogTotal();
   } else {
     bantogBox.classList.add('hidden');
@@ -1260,14 +1542,15 @@ document.getElementById('saveBantogScoreBtn').addEventListener('click', function
   var training = parseInt(document.getElementById('bantogScoreTraining').value, 10) || 0;
   var production = parseInt(document.getElementById('bantogScoreProduction').value, 10) || 0;
   var award = parseInt(document.getElementById('bantogScoreAward').value, 10) || 0;
+  var awardTitle = document.getElementById('bantogAwardTitle').value;
   fetch(APP_URL + '/admin/applications/review', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ csrf_token: CSRF_TOKEN, application_id: app.appId, action: 'score', score_training: training, score_production: production, score_award: award }),
+    body: JSON.stringify({ csrf_token: CSRF_TOKEN, application_id: app.appId, action: 'score', score_training: training, score_production: production, score_award: award, award_title: awardTitle }),
   }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (res) {
     if (!res.ok) { showToast(res.data.error || 'Failed to save score.', 'error'); return; }
-    app.bantogScoreTraining = training; app.bantogScoreProduction = production; app.bantogScoreAward = award;
+    app.bantogScoreTraining = training; app.bantogScoreProduction = production; app.bantogScoreAward = award; app.bantogAwardTitle = res.data.awardTitle;
     renderBantogRanking();
-    showToast('BANTOG score saved (' + res.data.total + '/100).', 'success');
+    showToast(awardTitle ? 'BANTOG score and award saved.' : 'BANTOG score saved (' + res.data.total + '/100).', 'success');
   });
 });
 
@@ -1296,6 +1579,344 @@ function renderBantogRanking() {
   }).join('');
 }
 renderBantogRanking();
+
+// ---------- BANTOG Evaluator Panel (Art. VIII Sec. 24) ----------
+function renderEvaluators() {
+  var body = document.getElementById('evaluatorsTableBody');
+  if (!body) return;
+  if (!BANTOG_EVALUATORS.length) { body.innerHTML = '<tr><td colspan="4" class="px-4 py-6 text-center text-xs text-gray-600">No evaluators on file yet.</td></tr>'; return; }
+  body.innerHTML = BANTOG_EVALUATORS.map(function (e) {
+    return '<tr class="border-t border-gray-100">' +
+      '<td class="px-4 py-3 text-xs font-medium" style="color:#1a1a2e;">' + e.name + '</td>' +
+      '<td class="px-4 py-3 text-xs text-gray-500">' + e.position + '</td>' +
+      '<td class="px-4 py-3 text-xs text-gray-500">' + e.academicYear + '</td>' +
+      '<td class="px-4 py-3 text-xs"><button type="button" class="evaluator-delete-btn px-2 py-1 rounded-lg text-xs font-semibold" style="background:#FEE2E2; color:#B91C1C;" data-id="' + e.id + '">Delete</button></td>' +
+      '</tr>';
+  }).join('');
+}
+renderEvaluators();
+document.getElementById('saveEvaluatorBtn').addEventListener('click', function () {
+  var name = document.getElementById('evaluatorNameInput').value.trim();
+  var position = document.getElementById('evaluatorPositionInput').value.trim();
+  var year = document.getElementById('evaluatorYearInput').value.trim();
+  if (!name || !position || !year) { showToast('Enter the evaluator\'s name, position, and academic year.', 'error'); return; }
+  fetch(APP_URL + '/admin/bantog-evaluators', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ csrf_token: CSRF_TOKEN, action: 'save', name: name, position: position, academic_year: year }),
+  }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (res) {
+    if (!res.ok) { showToast(res.data.error || 'Failed to save evaluator.', 'error'); return; }
+    BANTOG_EVALUATORS.push({ id: res.data.evaluator_id, name: name, position: position, academicYear: year });
+    renderEvaluators();
+    document.getElementById('evaluatorNameInput').value = '';
+    document.getElementById('evaluatorPositionInput').value = '';
+    document.getElementById('evaluatorYearInput').value = '';
+    showToast('Evaluator added.', 'success');
+  });
+});
+document.getElementById('evaluatorsTableBody').addEventListener('click', function (e) {
+  var btn = e.target.closest('.evaluator-delete-btn');
+  if (!btn) return;
+  var id = parseInt(btn.dataset.id, 10);
+  fetch(APP_URL + '/admin/bantog-evaluators', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ csrf_token: CSRF_TOKEN, action: 'delete', evaluator_id: id }),
+  }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (res) {
+    if (!res.ok) { showToast(res.data.error || 'Failed to delete.', 'error'); return; }
+    BANTOG_EVALUATORS = BANTOG_EVALUATORS.filter(function (x) { return x.id !== id; });
+    renderEvaluators();
+    showToast('Evaluator removed.', 'success');
+  });
+});
+
+// ---------- Partnerships / Collaboration with Culture and Arts Agencies (Art. XIII) ----------
+var STATUS_BADGE_COLORS = {
+  'Prospective': ['#F3F4F6', '#6B7280'], 'Proposal Submitted': ['#FEF9C3', '#92400E'], 'Approved': ['#DBEAFE', '#1D4ED8'],
+  'Active MOA': ['#DCFCE7', '#15803D'], 'Completed': ['#EDE9FE', '#6D28D9'], 'Declined': ['#FEE2E2', '#B91C1C'],
+};
+function renderPartners() {
+  var body = document.getElementById('partnersTableBody');
+  if (!body) return;
+  if (!PARTNERS.length) { body.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-xs text-gray-600">No partner organizations on file yet.</td></tr>'; return; }
+  body.innerHTML = PARTNERS.map(function (p) {
+    var colors = STATUS_BADGE_COLORS[p.status] || STATUS_BADGE_COLORS['Prospective'];
+    var moaDates = (p.moaSignedDate ? p.moaSignedDate : '&mdash;') + ' &rarr; ' + (p.moaExpiryDate ? p.moaExpiryDate : '&mdash;');
+    return '<tr class="border-t border-gray-50">' +
+      '<td class="px-4 py-3 text-xs font-medium" style="color:#1a1a2e;">' + p.name + '</td>' +
+      '<td class="px-4 py-3 text-xs text-gray-500">' + p.orgType + '</td>' +
+      '<td class="px-4 py-3 text-xs text-gray-500">' + (p.contactPerson || '&mdash;') + (p.contactEmail ? '<span class="text-gray-400 block">' + p.contactEmail + '</span>' : '') + '</td>' +
+      '<td class="px-4 py-3 text-xs"><span class="px-2 py-1 rounded-full text-[10px] font-semibold" style="background:' + colors[0] + '; color:' + colors[1] + ';">' + p.status + '</span></td>' +
+      '<td class="px-4 py-3 text-xs text-gray-500">' + moaDates + '</td>' +
+      '<td class="px-4 py-3 text-xs flex gap-1.5">' +
+        '<button type="button" class="partner-edit-btn px-2 py-1 rounded-lg text-xs font-semibold" style="background:#F3F4F6; color:#374151;" data-id="' + p.id + '">Edit</button>' +
+        '<button type="button" class="partner-delete-btn px-2 py-1 rounded-lg text-xs font-semibold" style="background:#FEE2E2; color:#B91C1C;" data-id="' + p.id + '">Delete</button>' +
+      '</td></tr>';
+  }).join('');
+}
+renderPartners();
+function resetPartnerForm() {
+  document.getElementById('partnerFormTitle').textContent = 'Add Partner Organization';
+  document.getElementById('savePartnerLabel').textContent = 'Add Partner';
+  document.getElementById('partnerResetBtn').classList.add('hidden');
+  document.getElementById('partnerIdInput').value = '';
+  document.getElementById('partnerNameInput').value = '';
+  document.getElementById('partnerTypeInput').value = 'Government Cultural Agency';
+  document.getElementById('partnerStatusInput').value = 'Prospective';
+  document.getElementById('partnerContactPersonInput').value = '';
+  document.getElementById('partnerContactEmailInput').value = '';
+  document.getElementById('partnerContactPhoneInput').value = '';
+  document.getElementById('partnerMoaSignedInput').value = '';
+  document.getElementById('partnerMoaExpiryInput').value = '';
+  document.getElementById('partnerProposalInput').value = '';
+  document.getElementById('partnerNotesInput').value = '';
+}
+document.getElementById('partnersTableBody').addEventListener('click', function (e) {
+  var editBtn = e.target.closest('.partner-edit-btn');
+  if (editBtn) {
+    var p = PARTNERS.find(function (x) { return x.id === parseInt(editBtn.dataset.id, 10); });
+    if (!p) return;
+    document.getElementById('partnerFormTitle').textContent = 'Edit Partner Organization';
+    document.getElementById('savePartnerLabel').textContent = 'Update Partner';
+    document.getElementById('partnerResetBtn').classList.remove('hidden');
+    document.getElementById('partnerIdInput').value = p.id;
+    document.getElementById('partnerNameInput').value = p.name;
+    document.getElementById('partnerTypeInput').value = p.orgType;
+    document.getElementById('partnerStatusInput').value = p.status;
+    document.getElementById('partnerContactPersonInput').value = p.contactPerson || '';
+    document.getElementById('partnerContactEmailInput').value = p.contactEmail || '';
+    document.getElementById('partnerContactPhoneInput').value = p.contactPhone || '';
+    document.getElementById('partnerMoaSignedInput').value = p.moaSignedDate || '';
+    document.getElementById('partnerMoaExpiryInput').value = p.moaExpiryDate || '';
+    document.getElementById('partnerProposalInput').value = p.proposalSummary || '';
+    document.getElementById('partnerNotesInput').value = p.notes || '';
+    document.getElementById('partnerNameInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  var delBtn = e.target.closest('.partner-delete-btn');
+  if (delBtn) {
+    var id = parseInt(delBtn.dataset.id, 10);
+    fetch(APP_URL + '/admin/partnerships', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ csrf_token: CSRF_TOKEN, action: 'delete', partner_id: id }),
+    }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (res) {
+      if (!res.ok) { showToast(res.data.error || 'Failed to delete.', 'error'); return; }
+      PARTNERS = PARTNERS.filter(function (x) { return x.id !== id; });
+      renderPartners();
+      showToast('Partner organization removed.', 'success');
+    });
+  }
+});
+document.getElementById('partnerResetBtn').addEventListener('click', resetPartnerForm);
+document.getElementById('savePartnerBtn').addEventListener('click', function () {
+  var id = parseInt(document.getElementById('partnerIdInput').value, 10) || 0;
+  var name = document.getElementById('partnerNameInput').value.trim();
+  if (!name) { showToast('Enter the organization name.', 'error'); return; }
+  var payload = {
+    csrf_token: CSRF_TOKEN, action: 'save', partner_id: id, name: name,
+    org_type: document.getElementById('partnerTypeInput').value,
+    status: document.getElementById('partnerStatusInput').value,
+    contact_person: document.getElementById('partnerContactPersonInput').value.trim(),
+    contact_email: document.getElementById('partnerContactEmailInput').value.trim(),
+    contact_phone: document.getElementById('partnerContactPhoneInput').value.trim(),
+    moa_signed_date: document.getElementById('partnerMoaSignedInput').value,
+    moa_expiry_date: document.getElementById('partnerMoaExpiryInput').value,
+    proposal_summary: document.getElementById('partnerProposalInput').value.trim(),
+    notes: document.getElementById('partnerNotesInput').value.trim(),
+  };
+  fetch(APP_URL + '/admin/partnerships', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+  }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (res) {
+    if (!res.ok) { showToast(res.data.error || 'Failed to save partner organization.', 'error'); return; }
+    var record = {
+      id: res.data.partner_id, name: name, orgType: payload.org_type, status: payload.status,
+      contactPerson: payload.contact_person || null, contactEmail: payload.contact_email || null, contactPhone: payload.contact_phone || null,
+      moaSignedDate: payload.moa_signed_date || null, moaExpiryDate: payload.moa_expiry_date || null,
+      proposalSummary: payload.proposal_summary || null, notes: payload.notes || null,
+    };
+    if (id) {
+      var idx = PARTNERS.findIndex(function (x) { return x.id === id; });
+      if (idx !== -1) PARTNERS[idx] = record;
+      showToast('Partner organization updated.', 'success');
+    } else {
+      PARTNERS.unshift(record);
+      showToast('Partner organization added.', 'success');
+    }
+    renderPartners();
+    resetPartnerForm();
+  });
+});
+
+// ---------- Admission Appeals (Art. IV Sec. 11) ----------
+var APPEAL_STATUS_COLORS = {
+  'Submitted': ['#F3F4F6', '#6B7280'], 'Under Review': ['#FEF9C3', '#92400E'], 'Endorsed to TAO Central': ['#DBEAFE', '#1D4ED8'],
+  'Approved': ['#DCFCE7', '#15803D'], 'Rejected': ['#FEE2E2', '#B91C1C'],
+};
+var APPEAL_CHAIN = ['Submitted', 'Under Review', 'Endorsed to TAO Central'];
+function renderAppeals() {
+  var el = document.getElementById('appealsList');
+  if (!el) return;
+  if (!APPEALS.length) { el.innerHTML = '<div class="modern-card bg-white rounded-2xl border border-gray-100 p-8 text-center text-sm text-gray-400">No admission appeals submitted yet.</div>'; return; }
+  el.innerHTML = APPEALS.map(function (a) {
+    var colors = APPEAL_STATUS_COLORS[a.status] || APPEAL_STATUS_COLORS['Submitted'];
+    var finalized = a.status === 'Approved' || a.status === 'Rejected';
+    var chainIdx = APPEAL_CHAIN.indexOf(a.status);
+    var docsHtml = ['certificatesUrl', 'recommendationUrl', 'schoolStatementUrl'].map(function (key) {
+      var labels = { certificatesUrl: 'Certificates/Awards', recommendationUrl: 'Recommendation Letter', schoolStatementUrl: 'School Statement' };
+      if (!a[key]) return '';
+      return '<a href="' + a[key] + '" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium mr-1.5 mb-1.5" style="background:#F3F4F6; color:#374151;"><i data-lucide="paperclip" class="w-3 h-3"></i> ' + labels[key] + '</a>';
+    }).join('');
+    var actionsHtml = '';
+    if (!finalized) {
+      actionsHtml = '<div class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-100">';
+      if (chainIdx !== -1 && chainIdx < APPEAL_CHAIN.length - 1) {
+        actionsHtml += '<button type="button" class="appeal-advance-btn px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#DBEAFE; color:#1D4ED8;" data-id="' + a.id + '">Advance to ' + APPEAL_CHAIN[chainIdx + 1] + '</button>';
+      }
+      actionsHtml += '<button type="button" class="appeal-approve-btn px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#DCFCE7; color:#15803D;" data-id="' + a.id + '">Approve</button>' +
+        '<button type="button" class="appeal-reject-btn px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#FEE2E2; color:#B91C1C;" data-id="' + a.id + '">Reject</button>' +
+        '<button type="button" class="appeal-remark-btn px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#FEF9C3; color:#92400E;" data-id="' + a.id + '">Add Remark</button>' +
+      '</div>';
+    }
+    return '<div class="modern-card bg-white rounded-2xl border border-gray-100 p-4 sm:p-5" style="box-shadow: 0 1px 6px rgba(0,0,0,0.06);">' +
+      '<div class="flex items-start justify-between gap-2 mb-2">' +
+        '<div><div class="text-sm font-semibold" style="color:#1a1a2e;">' + a.fullName + '</div>' +
+        '<div class="text-xs text-gray-400">' + a.secondarySchool + ' &middot; ' + a.email + (a.contactNumber ? ' &middot; ' + a.contactNumber : '') + '</div>' +
+        '<div class="text-[11px] text-gray-400 mt-0.5">Submitted ' + a.submittedAt + ' &middot; ' + a.campus + '</div></div>' +
+        '<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold flex-shrink-0" style="background:' + colors[0] + '; color:' + colors[1] + ';">' + a.status + '</span>' +
+      '</div>' +
+      '<div class="text-xs text-gray-600 leading-relaxed mb-2"><span class="font-semibold" style="color:#1a1a2e;">Achievements:</span> ' + a.achievements + '</div>' +
+      (a.academicStanding ? '<div class="text-xs text-gray-600 leading-relaxed mb-2"><span class="font-semibold" style="color:#1a1a2e;">Academic Standing:</span> ' + a.academicStanding + '</div>' : '') +
+      (a.remarks ? '<div class="text-xs rounded-lg p-2.5 mb-2" style="background:#FEF9C3; color:#92400E;"><span class="font-semibold">Remarks:</span> ' + a.remarks + '</div>' : '') +
+      '<div class="flex flex-wrap">' + docsHtml + '</div>' +
+      actionsHtml +
+    '</div>';
+  }).join('');
+  lucide.createIcons();
+}
+renderAppeals();
+function appealAction(id, action, extra) {
+  var body = Object.assign({ csrf_token: CSRF_TOKEN, appeal_id: id, action: action }, extra || {});
+  return fetch(APP_URL + '/admin/admission-appeals', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); });
+}
+document.getElementById('appealsList').addEventListener('click', function (e) {
+  var advBtn = e.target.closest('.appeal-advance-btn');
+  var apprBtn = e.target.closest('.appeal-approve-btn');
+  var rejBtn = e.target.closest('.appeal-reject-btn');
+  var remBtn = e.target.closest('.appeal-remark-btn');
+  if (advBtn) {
+    var id1 = parseInt(advBtn.dataset.id, 10);
+    appealAction(id1, 'advance').then(function (res) {
+      if (!res.ok) { showToast(res.data.error || 'Failed to advance.', 'error'); return; }
+      var a = APPEALS.find(function (x) { return x.id === id1; }); a.status = res.data.status;
+      renderAppeals(); showToast('Appeal advanced to ' + res.data.status + '.', 'success');
+    });
+  } else if (apprBtn) {
+    var id2 = parseInt(apprBtn.dataset.id, 10);
+    if (!confirm('Approve this admission appeal? This should only be done once the University President has approved the endorsement.')) return;
+    appealAction(id2, 'approve').then(function (res) {
+      if (!res.ok) { showToast(res.data.error || 'Failed to approve.', 'error'); return; }
+      var a = APPEALS.find(function (x) { return x.id === id2; }); a.status = res.data.status;
+      renderAppeals(); showToast('Appeal approved.', 'success');
+    });
+  } else if (rejBtn) {
+    var id3 = parseInt(rejBtn.dataset.id, 10);
+    var reason = prompt('Reason for rejecting this appeal (required):');
+    if (!reason) return;
+    appealAction(id3, 'reject', { remarks: reason }).then(function (res) {
+      if (!res.ok) { showToast(res.data.error || 'Failed to reject.', 'error'); return; }
+      var a = APPEALS.find(function (x) { return x.id === id3; }); a.status = res.data.status; a.remarks = reason;
+      renderAppeals(); showToast('Appeal rejected.', 'info');
+    });
+  } else if (remBtn) {
+    var id4 = parseInt(remBtn.dataset.id, 10);
+    var remark = prompt('Add a remark for this appeal:');
+    if (!remark) return;
+    appealAction(id4, 'remark', { remarks: remark }).then(function (res) {
+      if (!res.ok) { showToast(res.data.error || 'Failed to save remark.', 'error'); return; }
+      var a = APPEALS.find(function (x) { return x.id === id4; }); a.remarks = remark;
+      renderAppeals(); showToast('Remark saved.', 'success');
+    });
+  }
+});
+
+// ---------- Academic Support: Probation & Mentorships (Art. V Sec. 15) ----------
+function renderProbation() {
+  var body = document.getElementById('probationTableBody');
+  if (!body) return;
+  if (!PROBATION_STUDENTS.length) { body.innerHTML = '<tr><td colspan="4" class="px-4 py-6 text-center text-xs text-gray-600">No students currently on probation.</td></tr>'; return; }
+  body.innerHTML = PROBATION_STUDENTS.map(function (p) {
+    return '<tr class="border-t border-gray-50">' +
+      '<td class="px-4 py-3 text-xs font-medium" style="color:#1a1a2e;">' + p.name + '<span class="text-gray-400 block">' + (p.idNumber || '') + ' &middot; ' + (p.course || '') + '</span></td>' +
+      '<td class="px-4 py-3 text-xs text-gray-500">' + (p.reason || '&mdash;') + '</td>' +
+      '<td class="px-4 py-3 text-xs text-gray-500">' + p.since + '</td>' +
+      '<td class="px-4 py-3 text-xs"><button type="button" class="clear-probation-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold" style="background:#DCFCE7; color:#15803D;" data-id="' + p.userId + '">Clear Probation</button></td>' +
+      '</tr>';
+  }).join('');
+}
+function renderMentorships() {
+  var body = document.getElementById('mentorshipsTableBody');
+  if (!body) return;
+  if (!MENTORSHIPS.length) { body.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-xs text-gray-600">No active mentorships.</td></tr>'; return; }
+  body.innerHTML = MENTORSHIPS.map(function (m) {
+    return '<tr class="border-t border-gray-50">' +
+      '<td class="px-4 py-3 text-xs font-medium" style="color:#1a1a2e;">' + m.studentName + '<span class="text-gray-400 block">' + (m.idNumber || '') + '</span></td>' +
+      '<td class="px-4 py-3 text-xs text-gray-500">' + m.mentorName + '</td>' +
+      '<td class="px-4 py-3 text-xs text-gray-500">' + m.reason + '</td>' +
+      '<td class="px-4 py-3 text-xs text-gray-500">' + m.assignedAt + '</td>' +
+      '<td class="px-4 py-3 text-xs"><button type="button" class="complete-mentorship-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold" style="background:#F3F4F6; color:#374151;" data-id="' + m.id + '">Mark Completed</button></td>' +
+      '</tr>';
+  }).join('');
+}
+renderProbation();
+renderMentorships();
+document.getElementById('probationTableBody').addEventListener('click', function (e) {
+  var btn = e.target.closest('.clear-probation-btn');
+  if (!btn) return;
+  var userId = parseInt(btn.dataset.id, 10);
+  fetch(APP_URL + '/admin/academic-support', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ csrf_token: CSRF_TOKEN, action: 'clear_probation', student_user_id: userId }),
+  }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (res) {
+    if (!res.ok) { showToast(res.data.error || 'Failed to clear probation.', 'error'); return; }
+    PROBATION_STUDENTS = PROBATION_STUDENTS.filter(function (p) { return p.userId !== userId; });
+    renderProbation();
+    showToast('Probation cleared.', 'success');
+  });
+});
+document.getElementById('assignMentorBtn').addEventListener('click', function () {
+  var studentId = parseInt(document.getElementById('mentorshipStudentInput').value, 10) || 0;
+  var mentorName = document.getElementById('mentorshipNameInput').value.trim();
+  var reason = document.getElementById('mentorshipReasonInput').value;
+  if (!studentId || !mentorName) { showToast('Select a student and enter the mentor\'s name.', 'error'); return; }
+  fetch(APP_URL + '/admin/academic-support', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ csrf_token: CSRF_TOKEN, action: 'assign_mentor', student_user_id: studentId, mentor_name: mentorName, reason: reason }),
+  }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (res) {
+    if (!res.ok) { showToast(res.data.error || 'Failed to assign mentor.', 'error'); return; }
+    var studentOption = document.querySelector('#mentorshipStudentInput option[value="' + studentId + '"]');
+    MENTORSHIPS.unshift({
+      id: res.data.mentorship_id, studentName: studentOption ? studentOption.textContent.replace(/\s*\([^)]*\)$/, '') : 'Student',
+      idNumber: '', mentorName: mentorName, reason: reason, assignedAt: 'Just now',
+    });
+    renderMentorships();
+    document.getElementById('mentorshipNameInput').value = '';
+    showToast('Mentor assigned.', 'success');
+  });
+});
+document.getElementById('mentorshipsTableBody').addEventListener('click', function (e) {
+  var btn = e.target.closest('.complete-mentorship-btn');
+  if (!btn) return;
+  var id = parseInt(btn.dataset.id, 10);
+  fetch(APP_URL + '/admin/academic-support', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ csrf_token: CSRF_TOKEN, action: 'complete_mentorship', mentorship_id: id }),
+  }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (res) {
+    if (!res.ok) { showToast(res.data.error || 'Failed to update.', 'error'); return; }
+    MENTORSHIPS = MENTORSHIPS.filter(function (m) { return m.id !== id; });
+    renderMentorships();
+    showToast('Mentorship marked completed.', 'success');
+  });
+});
 
 // ---------- Trainer Level Equivalency Engine (Art. VI Sec. 17) ----------
 document.querySelectorAll('.trainer-score-slider').forEach(function (s) {
@@ -1362,6 +1983,62 @@ document.getElementById('trainerEvalTableBody').addEventListener('click', functi
     t.honorarium = res.data.computed_honorarium;
     renderTrainerEvaluations();
     showToast('Honorarium computed.', 'success');
+  });
+});
+
+// ---------- Resource Persons/Facilitators/Judges Honoraria (Art. VI Sec. 18) ----------
+function renderHonoraria() {
+  var body = document.getElementById('honorariaTableBody');
+  if (!HONORARIA.length) { body.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-xs text-gray-600">No honoraria recorded yet.</td></tr>'; return; }
+  body.innerHTML = HONORARIA.map(function (h) {
+    return '<tr class="border-t border-gray-50">' +
+      '<td class="px-4 py-3 text-xs font-medium" style="color:#1a1a2e;">' + h.personName + '</td>' +
+      '<td class="px-4 py-3 text-xs">' + h.role + '</td>' +
+      '<td class="px-4 py-3 text-xs">' + h.activityName + (h.discipline ? '<span class="text-gray-400 block">' + h.discipline + '</span>' : '') + '</td>' +
+      '<td class="px-4 py-3 text-xs">' + h.activityDate + '</td>' +
+      '<td class="px-4 py-3 text-xs font-semibold" style="color:#B11226;">' + (h.amount !== null ? 'Php ' + h.amount.toFixed(2) : '&mdash;') + '</td>' +
+      '<td class="px-4 py-3 text-xs"><button type="button" class="honorarium-delete-btn px-2 py-1 rounded-lg text-xs font-semibold" style="background:#FEE2E2; color:#B91C1C;" data-id="' + h.id + '">Delete</button></td>' +
+      '</tr>';
+  }).join('');
+}
+renderHonoraria();
+document.getElementById('saveHonorariumBtn').addEventListener('click', function () {
+  var name = document.getElementById('honorariumNameInput').value.trim();
+  var role = document.getElementById('honorariumRoleInput').value;
+  var activity = document.getElementById('honorariumActivityInput').value.trim();
+  var date = document.getElementById('honorariumDateInput').value;
+  var amount = document.getElementById('honorariumAmountInput').value;
+  if (!name || !activity || !date) { showToast('Enter the name, activity, and date.', 'error'); return; }
+  fetch(APP_URL + '/admin/honoraria', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ csrf_token: CSRF_TOKEN, action: 'save', person_name: name, role: role, activity_name: activity, activity_date: date, amount: amount }),
+  }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (res) {
+    if (!res.ok) { showToast(res.data.error || 'Failed to save honorarium.', 'error'); return; }
+    HONORARIA.unshift({
+      id: res.data.honorarium_id, personName: name, role: role, activityName: activity,
+      activityDate: new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      discipline: null, amount: amount !== '' ? parseFloat(amount) : null,
+    });
+    renderHonoraria();
+    document.getElementById('honorariumNameInput').value = '';
+    document.getElementById('honorariumActivityInput').value = '';
+    document.getElementById('honorariumDateInput').value = '';
+    document.getElementById('honorariumAmountInput').value = '';
+    showToast('Honorarium record added.', 'success');
+  });
+});
+document.getElementById('honorariaTableBody').addEventListener('click', function (e) {
+  var btn = e.target.closest('.honorarium-delete-btn');
+  if (!btn) return;
+  var id = parseInt(btn.dataset.id, 10);
+  fetch(APP_URL + '/admin/honoraria', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ csrf_token: CSRF_TOKEN, action: 'delete', honorarium_id: id }),
+  }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (res) {
+    if (!res.ok) { showToast(res.data.error || 'Failed to delete.', 'error'); return; }
+    HONORARIA = HONORARIA.filter(function (h) { return h.id !== id; });
+    renderHonoraria();
+    showToast('Honorarium record deleted.', 'success');
   });
 });
 
@@ -1483,10 +2160,17 @@ document.getElementById('remarksSaveBtn').addEventListener('click', function () 
 });
 
 // ---------- CSV export ----------
+// RFC 4180 field escaping — a bare join(',') breaks the moment any field
+// (remarks especially, being free-text admin notes) contains a comma,
+// quote, or newline, silently shifting every column after it in Excel/Sheets.
+function csvField(value) {
+  var s = String(value == null ? '' : value);
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
 function exportCsv() {
   var headers = ['App ID', 'Student Name', 'Student ID', 'Type', 'Date', 'Status', 'Course', 'Remarks'];
-  var rows = filteredApps().map(function (a) { return [a.code, a.name, a.studentId, a.type, a.date, a.status, a.course, a.remarks || ''].join(','); });
-  var csv = [headers.join(','), rows.join('\n')].join('\n');
+  var rows = filteredApps().map(function (a) { return [a.code, a.name, a.studentId, a.type, a.date, a.status, a.course, a.remarks || ''].map(csvField).join(','); });
+  var csv = [headers.map(csvField).join(','), rows.join('\r\n')].join('\r\n');
   var blob = new Blob([csv], { type: 'text/csv' });
   var url = URL.createObjectURL(blob);
   var link = document.createElement('a');
@@ -1509,13 +2193,14 @@ function renderEvents() {
       + '<span class="text-xs px-2.5 py-1 rounded-full" style="background:' + (upcoming ? '#DBEAFE' : '#FEF9C3') + ';color:' + (upcoming ? '#1D4ED8' : '#92400E') + ';">' + ev.status + '</span></div>'
       + '<h4 class="font-semibold text-sm mb-1" style="color:#1a1a2e;">' + ev.title + '</h4><p class="text-xs text-gray-500 mb-1">' + ev.date + '</p><p class="text-xs text-gray-600 mb-1">' + (ev.location || '') + '</p>'
       + (ev.requiresTravel ? '<p class="text-[10px] font-semibold mb-2 flex items-center gap-1" style="color:#92400E;"><i data-lucide="plane" class="w-3 h-3"></i> Requires off-campus travel</p>' : '<div class="mb-2"></div>')
-      + '<div class="flex items-center justify-between"><span class="text-xs text-gray-500">' + ev.attendees + ' expected</span>'
+      + '<div class="flex items-center justify-between"><button class="event-attendees-btn text-xs font-medium flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors hover:opacity-80" style="color:#374151; background:#F9FAFB; border-color:#E5E7EB;" data-id="' + ev.id + '"><i data-lucide="users" class="w-3.5 h-3.5"></i> ' + ev.registrations.length + ' registered <span class="text-gray-400 font-normal">/ ' + ev.attendees + ' expected</span></button>'
       + '<div class="flex items-center gap-2"><button class="event-edit-btn text-xs flex items-center gap-1 hover:opacity-80" style="color:#B11226;" data-id="' + ev.id + '"><i data-lucide="pencil" class="w-3 h-3"></i> Edit</button>'
       + '<button class="event-delete-btn text-xs flex items-center gap-1 text-gray-600 hover:text-red-500" data-id="' + ev.id + '" aria-label="Delete event"><i data-lucide="trash-2" class="w-3 h-3"></i></button></div></div></div>';
   }).join('');
   lucide.createIcons();
   document.querySelectorAll('.event-edit-btn').forEach(function (b) { b.addEventListener('click', function () { openEditEvent(parseInt(b.dataset.id, 10)); }); });
   document.querySelectorAll('.event-delete-btn').forEach(function (b) { b.addEventListener('click', function () { openDeleteEvent(parseInt(b.dataset.id, 10)); }); });
+  document.querySelectorAll('.event-attendees-btn').forEach(function (b) { b.addEventListener('click', function () { openAttendeesModal(parseInt(b.dataset.id, 10)); }); });
 }
 var eventModal = document.getElementById('eventModal');
 document.getElementById('addEventBtn').addEventListener('click', function () {
@@ -1526,6 +2211,7 @@ document.getElementById('addEventBtn').addEventListener('click', function () {
   document.getElementById('eventLocationInput').value = ''; document.getElementById('eventAttendeesInput').value = ''; document.getElementById('eventStatusInput').value = 'Upcoming';
   document.getElementById('eventRequiresTravelInput').checked = false;
   document.getElementById('eventRequiresTypeInput').value = '';
+  document.getElementById('eventResultInput').value = '';
   eventModal.classList.remove('hidden'); eventModal.classList.add('flex');
 });
 function openEditEvent(id) {
@@ -1542,6 +2228,7 @@ function openEditEvent(id) {
   document.getElementById('eventStatusInput').value = ev.status;
   document.getElementById('eventRequiresTravelInput').checked = !!ev.requiresTravel;
   document.getElementById('eventRequiresTypeInput').value = ev.requiresTypeCode || '';
+  document.getElementById('eventResultInput').value = ev.competitionResult || '';
   eventModal.classList.remove('hidden'); eventModal.classList.add('flex');
 }
 document.getElementById('eventModalCloseBtn').addEventListener('click', function () { eventModal.classList.add('hidden'); eventModal.classList.remove('flex'); });
@@ -1559,6 +2246,7 @@ document.getElementById('eventSaveBtn').addEventListener('click', function () {
     status: document.getElementById('eventStatusInput').value,
     requires_travel: document.getElementById('eventRequiresTravelInput').checked,
     requires_type_code: document.getElementById('eventRequiresTypeInput').value,
+    competition_result: document.getElementById('eventResultInput').value.trim(),
   };
   fetch(APP_URL + '/admin/events/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
     .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
@@ -1567,10 +2255,10 @@ document.getElementById('eventSaveBtn').addEventListener('click', function () {
       var formatted = new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
       if (id) {
         var ev = EVENTS.find(function (e) { return e.id === id; });
-        ev.title = title; ev.eventType = payload.event_type; ev.date = formatted; ev.rawDate = date; ev.location = payload.location; ev.attendees = parseInt(payload.attendees, 10) || 0; ev.status = payload.status; ev.requiresTravel = payload.requires_travel; ev.requiresTypeCode = payload.requires_type_code || null;
+        ev.title = title; ev.eventType = payload.event_type; ev.date = formatted; ev.rawDate = date; ev.location = payload.location; ev.attendees = parseInt(payload.attendees, 10) || 0; ev.status = payload.status; ev.requiresTravel = payload.requires_travel; ev.requiresTypeCode = payload.requires_type_code || null; ev.competitionResult = payload.competition_result || null;
         showToast('Event updated successfully.', 'success');
       } else {
-        EVENTS.push({ id: res.data.event_id, title: title, eventType: payload.event_type, date: formatted, rawDate: date, location: payload.location, attendees: parseInt(payload.attendees, 10) || 0, status: payload.status, requiresTravel: payload.requires_travel, requiresTypeCode: payload.requires_type_code || null });
+        EVENTS.push({ id: res.data.event_id, title: title, eventType: payload.event_type, date: formatted, rawDate: date, location: payload.location, attendees: parseInt(payload.attendees, 10) || 0, status: payload.status, requiresTravel: payload.requires_travel, requiresTypeCode: payload.requires_type_code || null, competitionResult: payload.competition_result || null, registrations: [] });
         showToast('New event added successfully.', 'success');
       }
       renderEvents();
@@ -1598,6 +2286,159 @@ document.getElementById('deleteEventConfirmBtn').addEventListener('click', funct
       deleteEventModal.classList.add('hidden'); deleteEventModal.classList.remove('flex');
     });
 });
+
+// ---------- Event Attendees (mark Attended/Absent for RSVP'd students) ----------
+var attendeesModal = document.getElementById('attendeesModal');
+var ATTENDEE_STATUS_BG = { Registered: '#DBEAFE', Attended: '#DCFCE7', Absent: '#FEE2E2', Cancelled: '#F3F4F6' };
+var ATTENDEE_STATUS_TEXT = { Registered: '#1D4ED8', Attended: '#15803D', Absent: '#B91C1C', Cancelled: '#6B7280' };
+var currentAttendeesEventId = null;
+function openAttendeesModal(id) {
+  var ev = EVENTS.find(function (e) { return e.id === id; });
+  if (!ev) return;
+  currentAttendeesEventId = id;
+  document.getElementById('attendeesModalSubtitle').textContent = ev.title;
+  renderAttendees(ev);
+  attendeesModal.classList.remove('hidden'); attendeesModal.classList.add('flex');
+}
+function renderAttendees(ev) {
+  var body = document.getElementById('attendeesTableBody');
+  if (!ev.registrations.length) {
+    body.innerHTML = '<tr><td colspan="3" class="px-4 py-8 text-center text-xs text-gray-500">No one has RSVP\'d to this event yet.</td></tr>';
+    return;
+  }
+  body.innerHTML = ev.registrations.map(function (r) {
+    var bg = ATTENDEE_STATUS_BG[r.status] || '#F3F4F6';
+    var text = ATTENDEE_STATUS_TEXT[r.status] || '#6B7280';
+    var canMark = r.status === 'Registered' || r.status === 'Attended' || r.status === 'Absent';
+    return '<tr class="border-t border-gray-100">'
+      + '<td class="px-4 py-3"><div class="text-xs font-medium" style="color:#1a1a2e;">' + r.name + '</div><div class="text-[11px] text-gray-500">' + (r.idNumber || '') + (r.course ? ' &middot; ' + r.course : '') + '</div></td>'
+      + '<td class="px-4 py-3"><span class="text-xs px-2.5 py-1 rounded-full" style="background:' + bg + ';color:' + text + ';">' + r.status + '</span></td>'
+      + '<td class="px-4 py-3">' + (canMark
+        ? '<div class="flex items-center gap-1.5"><button class="attendee-mark-btn text-xs px-2.5 py-1.5 rounded-lg font-semibold" style="background:#DCFCE7;color:#15803D;" data-id="' + r.attendanceId + '" data-status="Attended">Attended</button>'
+          + '<button class="attendee-mark-btn text-xs px-2.5 py-1.5 rounded-lg font-semibold" style="background:#FEE2E2;color:#B91C1C;" data-id="' + r.attendanceId + '" data-status="Absent">Absent</button></div>'
+        : '<span class="text-xs text-gray-400">&mdash;</span>') + '</td></tr>';
+  }).join('');
+  document.querySelectorAll('.attendee-mark-btn').forEach(function (b) {
+    b.addEventListener('click', function () { markAttendance(parseInt(b.dataset.id, 10), b.dataset.status); });
+  });
+}
+function markAttendance(attendanceId, status) {
+  fetch(APP_URL + '/admin/events/attendance', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ csrf_token: CSRF_TOKEN, attendance_id: attendanceId, status: status }),
+  }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (res) {
+    if (!res.ok) { showToast(res.data.error || 'Failed to update attendance.', 'error'); return; }
+    for (var i = 0; i < EVENTS.length; i++) {
+      var reg = EVENTS[i].registrations.find(function (r) { return r.attendanceId === attendanceId; });
+      if (reg) { reg.status = status; renderAttendees(EVENTS[i]); break; }
+    }
+    showToast('Marked ' + status + '.', 'success');
+  });
+}
+document.getElementById('attendeesModalCloseBtn').addEventListener('click', function () { attendeesModal.classList.add('hidden'); attendeesModal.classList.remove('flex'); });
+attendeesModal.addEventListener('click', function (e) { if (e.target === attendeesModal) { attendeesModal.classList.add('hidden'); attendeesModal.classList.remove('flex'); } });
+
+// ---------- QR Scan Mode (staff scans a student's Event Check-In QR) ----------
+var scanModal = document.getElementById('scanModal');
+var scanVideo = document.getElementById('scanVideo');
+var scanCanvas = document.getElementById('scanCanvas');
+var scanStream = null;
+var scanRafId = null;
+var scanLocked = false; // brief cooldown after each successful/failed read so the same code isn't re-posted every frame
+
+function setScanStatus(message, tone) {
+  var box = document.getElementById('scanStatusBox');
+  var errBox = document.getElementById('scanCameraError');
+  errBox.classList.add('hidden');
+  box.classList.remove('hidden');
+  box.textContent = message;
+  var bg = '#F3F4F6', color = '#6B7280';
+  if (tone === 'success') { bg = '#DCFCE7'; color = '#15803D'; }
+  else if (tone === 'error') { bg = '#FEE2E2'; color = '#B91C1C'; }
+  box.style.background = bg; box.style.color = color;
+}
+
+function openScanMode() {
+  if (!currentAttendeesEventId) return;
+  var ev = EVENTS.find(function (e) { return e.id === currentAttendeesEventId; });
+  document.getElementById('scanModalSubtitle').textContent = ev ? ev.title : '';
+  attendeesModal.classList.add('hidden'); attendeesModal.classList.remove('flex');
+  scanModal.classList.remove('hidden'); scanModal.classList.add('flex');
+
+  // getUserMedia only exists in a secure context (HTTPS, or localhost/127.0.0.1
+  // for local dev) — on plain HTTP over a LAN/production hostname the browser
+  // never defines navigator.mediaDevices at all, so calling .getUserMedia()
+  // would throw a raw TypeError instead of hitting the .catch() below.
+  if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    document.getElementById('scanStatusBox').classList.add('hidden');
+    var secErrBox = document.getElementById('scanCameraError');
+    secErrBox.classList.remove('hidden');
+    secErrBox.textContent = 'Camera access needs a secure connection (HTTPS). This page is being served over plain HTTP, so the browser won\'t allow camera use here — ask OCA/IT to enable HTTPS for this site.';
+    return;
+  }
+
+  setScanStatus('Point the camera at a student\'s QR code.', 'idle');
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(function (stream) {
+    scanStream = stream;
+    scanVideo.srcObject = stream;
+    scanVideo.play();
+    scanRafId = requestAnimationFrame(scanFrame);
+  }).catch(function () {
+    document.getElementById('scanStatusBox').classList.add('hidden');
+    var errBox = document.getElementById('scanCameraError');
+    errBox.classList.remove('hidden');
+    errBox.textContent = 'Could not access the camera. Please allow camera permission and try again.';
+  });
+}
+
+function scanFrame() {
+  if (!scanModal.classList.contains('flex')) return;
+  if (scanVideo.readyState === scanVideo.HAVE_ENOUGH_DATA && !scanLocked) {
+    scanCanvas.width = scanVideo.videoWidth;
+    scanCanvas.height = scanVideo.videoHeight;
+    var ctx = scanCanvas.getContext('2d');
+    ctx.drawImage(scanVideo, 0, 0, scanCanvas.width, scanCanvas.height);
+    var imageData = ctx.getImageData(0, 0, scanCanvas.width, scanCanvas.height);
+    var code = jsQR(imageData.data, imageData.width, imageData.height);
+    if (code && code.data) {
+      handleScannedToken(code.data);
+    }
+  }
+  scanRafId = requestAnimationFrame(scanFrame);
+}
+
+function handleScannedToken(token) {
+  scanLocked = true;
+  setScanStatus('Checking…', 'idle');
+  fetch(APP_URL + '/admin/events/checkin', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ csrf_token: CSRF_TOKEN, event_id: currentAttendeesEventId, token: token }),
+  }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (res) {
+    if (!res.ok) {
+      setScanStatus(res.data.error || 'QR code not recognized.', 'error');
+    } else {
+      setScanStatus('✓ ' + res.data.name + ' marked Attended', 'success');
+      var ev = EVENTS.find(function (e) { return e.id === currentAttendeesEventId; });
+      if (ev) {
+        var reg = ev.registrations.find(function (r) { return r.attendanceId === res.data.attendanceId; });
+        if (reg) { reg.status = 'Attended'; }
+        else { ev.registrations.push({ attendanceId: res.data.attendanceId, name: res.data.name, idNumber: res.data.idNumber, course: res.data.course, status: 'Attended' }); }
+        renderEvents();
+      }
+    }
+    setTimeout(function () { scanLocked = false; if (scanModal.classList.contains('flex')) setScanStatus('Point the camera at a student\'s QR code.', 'idle'); }, 1800);
+  });
+}
+
+function closeScanMode() {
+  if (scanRafId) cancelAnimationFrame(scanRafId);
+  scanRafId = null;
+  if (scanStream) { scanStream.getTracks().forEach(function (t) { t.stop(); }); scanStream = null; }
+  scanModal.classList.add('hidden'); scanModal.classList.remove('flex');
+}
+document.getElementById('openScanModeBtn').addEventListener('click', openScanMode);
+document.getElementById('scanModalCloseBtn').addEventListener('click', closeScanMode);
+scanModal.addEventListener('click', function (e) { if (e.target === scanModal) closeScanMode(); });
 
 // ---------- Generic confirm modal (reject application, delete announcement, etc.) ----------
 var confirmActionModal = document.getElementById('confirmActionModal');
@@ -1637,6 +2478,7 @@ document.getElementById('addAnnBtn').addEventListener('click', function () {
   document.getElementById('annModalTitle').textContent = 'New Announcement';
   document.getElementById('annSaveLabel').textContent = 'Publish';
   document.getElementById('annIdInput').value = ''; document.getElementById('annTitleInput').value = '';
+  document.getElementById('annContentInput').value = '';
   document.getElementById('annTypeInput').value = 'Audition'; document.getElementById('annAudienceInput').value = 'All Students';
   annModal.classList.remove('hidden'); annModal.classList.add('flex');
 });
@@ -1647,6 +2489,7 @@ function openEditAnn(id) {
   document.getElementById('annSaveLabel').textContent = 'Update';
   document.getElementById('annIdInput').value = ann.id;
   document.getElementById('annTitleInput').value = ann.title;
+  document.getElementById('annContentInput').value = ann.content || '';
   document.getElementById('annTypeInput').value = ann.type;
   document.getElementById('annAudienceInput').value = ann.audience;
   annModal.classList.remove('hidden'); annModal.classList.add('flex');
@@ -1657,19 +2500,20 @@ document.getElementById('annSaveBtn').addEventListener('click', function () {
   var title = document.getElementById('annTitleInput').value.trim();
   if (!title) return;
   var id = parseInt(document.getElementById('annIdInput').value, 10) || 0;
+  var content = document.getElementById('annContentInput').value.trim();
   var type = document.getElementById('annTypeInput').value;
   var audience = document.getElementById('annAudienceInput').value;
-  fetch(APP_URL + '/admin/announcements', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csrf_token: CSRF_TOKEN, action: 'save', announcement_id: id, title: title, type: type, audience: audience }) })
+  fetch(APP_URL + '/admin/announcements', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csrf_token: CSRF_TOKEN, action: 'save', announcement_id: id, title: title, content: content, type: type, audience: audience }) })
     .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
     .then(function (res) {
       if (!res.ok) { showToast(res.data.error || 'Failed to save announcement.', 'error'); return; }
       var today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
       if (id) {
         var ann = ANNOUNCEMENTS.find(function (a) { return a.id === id; });
-        ann.title = title; ann.type = type; ann.audience = audience;
+        ann.title = title; ann.content = content; ann.type = type; ann.audience = audience;
         showToast('Announcement updated.', 'success');
       } else {
-        ANNOUNCEMENTS.unshift({ id: res.data.announcement_id, title: title, date: today, type: type, audience: audience });
+        ANNOUNCEMENTS.unshift({ id: res.data.announcement_id, title: title, content: content, date: today, type: type, audience: audience });
         showToast('Announcement published.', 'success');
       }
       renderAnnouncements();
@@ -1690,24 +2534,27 @@ function doDeleteAnn(id) {
     });
 }
 
-// ---------- Settings (client-side only, matches original design) ----------
-var defaultSettings = { systemName: 'ARTEMIS', institution: 'BatStateU ARASOF-Nasugbu', office: 'Culture and Arts Office', academicYear: '2025 – 2026', adminName: 'OCA Head', email: 'admin@batstate-u.edu.ph', role: 'OCA Administrator' };
-function loadSettings() {
-  var saved = {};
-  try { saved = JSON.parse(localStorage.getItem('artemis_settings') || '{}'); } catch (e) {}
-  var values = Object.assign({}, defaultSettings, saved);
-  Object.keys(values).forEach(function (key) { var el = document.getElementById('set_' + key); if (el) el.value = values[key]; });
-}
-loadSettings();
+// ---------- Settings (persisted server-side: `settings` table + this admin's own users row) ----------
 document.getElementById('saveSettingsBtn').addEventListener('click', function () {
-  var values = {};
-  Object.keys(defaultSettings).forEach(function (key) { var el = document.getElementById('set_' + key); values[key] = el ? el.value : defaultSettings[key]; });
-  try { localStorage.setItem('artemis_settings', JSON.stringify(values)); } catch (e) {}
-  document.getElementById('saveSettingsLabel').textContent = 'Saved!';
-  this.style.background = '#22C55E';
-  showToast('Settings saved successfully.', 'success');
   var btn = this;
-  setTimeout(function () { document.getElementById('saveSettingsLabel').textContent = 'Save Changes'; btn.style.background = '#B11226'; }, 2000);
+  var payload = {
+    csrf_token: CSRF_TOKEN,
+    systemName: document.getElementById('set_systemName').value.trim(),
+    institution: document.getElementById('set_institution').value.trim(),
+    office: document.getElementById('set_office').value.trim(),
+    academicYear: document.getElementById('set_academicYear').value.trim(),
+    adminName: document.getElementById('set_adminName').value.trim(),
+    email: document.getElementById('set_email').value.trim(),
+  };
+  fetch(APP_URL + '/admin/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
+    .then(function (res) {
+      if (!res.ok) { showToast(res.data.error || 'Failed to save settings.', 'error'); return; }
+      document.getElementById('saveSettingsLabel').textContent = 'Saved!';
+      btn.style.background = '#22C55E';
+      showToast('Settings saved successfully.', 'success');
+      setTimeout(function () { document.getElementById('saveSettingsLabel').textContent = 'Save Changes'; btn.style.background = '#B11226'; }, 2000);
+    });
 });
 
 // ---------- Charts ----------

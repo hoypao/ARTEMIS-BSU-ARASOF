@@ -41,6 +41,7 @@ function login_user(array $userRow): void
         'first_name' => $userRow['first_name'],
         'last_name'  => $userRow['last_name'],
         'course'     => $userRow['course'],
+        'college'    => $userRow['college'] ?? null,
     ]]);
 }
 
@@ -48,6 +49,18 @@ function logout_user(): void
 {
     session()->invalidate();
     session()->regenerateToken();
+}
+
+/** Which named route a role's own dashboard lives at — used by login/logout-role redirects. */
+function dashboard_route_for_role(string $role): string
+{
+    return match ($role) {
+        'admin' => 'admin.dashboard',
+        'trainer' => 'trainer.dashboard',
+        'pathfit_faculty' => 'pathfit-faculty.dashboard',
+        'college_dean' => 'dean.dashboard',
+        default => 'student.dashboard',
+    };
 }
 
 // ---------------------------------------------------------------------
@@ -63,6 +76,27 @@ function flash_set(string $type, string $message): void
 function flash_get(string $type): ?string
 {
     return session()->pull('flash.' . $type);
+}
+
+// ---------------------------------------------------------------------
+// System settings (key/value store — admin dashboard's Settings tab)
+// ---------------------------------------------------------------------
+
+function get_setting(PDO $pdo, string $key, ?string $default = null): ?string
+{
+    $stmt = $pdo->prepare('SELECT setting_value FROM settings WHERE setting_key = :key');
+    $stmt->execute(['key' => $key]);
+    $value = $stmt->fetchColumn();
+    return $value !== false ? $value : $default;
+}
+
+function set_setting(PDO $pdo, string $key, string $value): void
+{
+    $stmt = $pdo->prepare(
+        'INSERT INTO settings (setting_key, setting_value) VALUES (:key, :value)
+         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)'
+    );
+    $stmt->execute(['key' => $key, 'value' => $value]);
 }
 
 // ---------------------------------------------------------------------
@@ -110,13 +144,16 @@ function time_ago(?string $datetime): string
     return format_date($datetime);
 }
 
-// e.g. APP-2026-001, APP-2026-002 ... — counts this year's applications so far and
-// numbers the new one next; the year resets the sequence each January.
+// e.g. APP-2026-001, APP-2026-002 ... — numbers the new one one past the highest
+// used so far this year; the year resets the sequence each January. Deliberately
+// keyed off MAX (not COUNT) so a deleted/missing application in the middle of
+// the sequence can never make a freshly generated code collide with one still
+// in use — COUNT-based numbering breaks the moment any row is removed.
 function generate_application_code(PDO $pdo): string
 {
     $year = date('Y');
     $stmt = $pdo->prepare(
-        "SELECT COUNT(*) FROM applications WHERE application_code LIKE :prefix"
+        "SELECT MAX(CAST(SUBSTRING(application_code, 10) AS UNSIGNED)) FROM applications WHERE application_code LIKE :prefix"
     );
     $stmt->execute(['prefix' => "APP-{$year}-%"]);
     $next = ((int) $stmt->fetchColumn()) + 1;

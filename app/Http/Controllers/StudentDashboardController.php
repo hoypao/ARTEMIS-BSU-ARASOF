@@ -20,10 +20,30 @@ class StudentDashboardController extends Controller
         $stmt->execute(['id' => $sessionUser['user_id']]);
         $user = $stmt->fetch();
 
+        // Check-in QR code (Art. XII event attendance) — a random, unguessable
+        // token distinct from the sequential user_id, generated once and reused.
+        // Staff scan this at the venue to mark real Attended status server-side.
+        if (empty($user['qr_token'])) {
+            $qrToken = bin2hex(random_bytes(24));
+            $stmt = $pdo->prepare('UPDATE users SET qr_token = :token WHERE user_id = :id');
+            $stmt->execute(['token' => $qrToken, 'id' => $sessionUser['user_id']]);
+            $user['qr_token'] = $qrToken;
+        }
+
         $stmt = $pdo->prepare('SELECT * FROM performer_profiles WHERE user_id = :id');
         $stmt->execute(['id' => $sessionUser['user_id']]);
         $profile = $stmt->fetch() ?: null;
         $profilePhotoUrl = ($profile && !empty($profile['photo_path'])) ? APP_URL . '/' . $profile['photo_path'] : null;
+
+        // Academic Support: grade monitoring + probation status (Art. V Sec. 15).
+        $stmt = $pdo->prepare('SELECT * FROM academic_monitoring_reports WHERE user_id = :id ORDER BY submitted_at DESC');
+        $stmt->execute(['id' => $sessionUser['user_id']]);
+        $academicReports = $stmt->fetchAll();
+        $isOnProbation = $profile !== null && $profile['probation_status'] === 'Probation';
+
+        $stmt = $pdo->prepare("SELECT * FROM student_mentorships WHERE student_user_id = :id AND status = 'Active' ORDER BY assigned_at DESC");
+        $stmt->execute(['id' => $sessionUser['user_id']]);
+        $activeMentorships = $stmt->fetchAll();
 
         $talents = [];
         if ($profile) {
@@ -65,6 +85,13 @@ class StudentDashboardController extends Controller
             'appeal_admission'                => 'user',
         ];
         $talentCategories = $pdo->query('SELECT * FROM talent_categories ORDER BY name')->fetchAll();
+        $pathfitFaculty = $pdo->query("SELECT user_id, first_name, last_name FROM users WHERE role = 'pathfit_faculty' AND status = 'active' ORDER BY last_name, first_name")->fetchAll();
+
+        // This student's own granted benefits (Stipend/PATHFit/BANTOG) — including
+        // whether the Art. IX Sec. 34 end-of-semester completion report is still due.
+        $stmt = $pdo->prepare('SELECT * FROM benefit_records WHERE user_id = :id ORDER BY granted_at DESC');
+        $stmt->execute(['id' => $sessionUser['user_id']]);
+        $benefits = $stmt->fetchAll();
 
         $announcements = $pdo->query('SELECT * FROM announcements ORDER BY created_at DESC LIMIT 4')->fetchAll();
         $upcomingEvents = $pdo->query("SELECT * FROM events WHERE status IN ('Upcoming','Planning') ORDER BY event_date ASC LIMIT 3")->fetchAll();
@@ -193,6 +220,144 @@ class StudentDashboardController extends Controller
         }
 
         flash_set('success', 'Profile photo updated successfully.');
+        return $back;
+    }
+
+    /**
+     * End-of-semester Stipend completion report (Art. IX Sec. 34) — documentation
+     * (written feedback, optional photo/video file) of the activities the stipend
+     * supported and how it contributed to the student's artistic development.
+     */
+    public function submitBenefitReport(Request $request)
+    {
+        $user = current_user();
+        $back = redirect()->route('student.dashboard', ['tab' => 'applications']);
+
+        $benefitId = (int) $request->input('benefit_id', 0);
+        $report = trim((string) $request->input('completion_report', ''));
+
+        if ($benefitId <= 0 || $report === '') {
+            flash_set('error', 'Please describe how the stipend contributed to your training or performances.');
+            return $back;
+        }
+
+        $pdo = getDB();
+        $stmt = $pdo->prepare("SELECT * FROM benefit_records WHERE benefit_id = :id AND user_id = :uid AND benefit_type = 'Stipend'");
+        $stmt->execute(['id' => $benefitId, 'uid' => $user['user_id']]);
+        $benefit = $stmt->fetch();
+
+        if (!$benefit) {
+            flash_set('error', 'Benefit record not found.');
+            return $back;
+        }
+
+        $filePath = null;
+        if (!empty($_FILES['completion_file']) && $_FILES['completion_file']['error'] !== UPLOAD_ERR_NO_FILE) {
+            if ($_FILES['completion_file']['error'] !== UPLOAD_ERR_OK) {
+                flash_set('error', 'Failed to upload the attached file. Please try again.');
+                return $back;
+            }
+            if ($_FILES['completion_file']['size'] > 20 * 1024 * 1024) {
+                flash_set('error', 'Attached file must be 20MB or smaller.');
+                return $back;
+            }
+            $ext = strtolower(pathinfo($_FILES['completion_file']['name'], PATHINFO_EXTENSION));
+            if (!in_array($ext, ['pdf', 'jpg', 'jpeg', 'png', 'mp4', 'mov'], true)) {
+                flash_set('error', 'Attachment must be a PDF, image (jpg, png), or video (mp4, mov).');
+                return $back;
+            }
+            $destDir = ARTEMIS_UPLOAD_PATH . '/' . $user['user_id'] . '/benefit-reports';
+            if (!is_dir($destDir)) {
+                mkdir($destDir, 0775, true);
+            }
+            $safeName = bin2hex(random_bytes(8)) . '.' . $ext;
+            if (!move_uploaded_file($_FILES['completion_file']['tmp_name'], $destDir . '/' . $safeName)) {
+                flash_set('error', 'Something went wrong saving your attachment. Please try again.');
+                return $back;
+            }
+            $filePath = 'uploads/documents/' . $user['user_id'] . '/benefit-reports/' . $safeName;
+        }
+
+        $stmt = $pdo->prepare(
+            'UPDATE benefit_records SET completion_report = :report, completion_file_path = COALESCE(:file, completion_file_path), completion_submitted_at = NOW() WHERE benefit_id = :id'
+        );
+        $stmt->execute(['report' => $report, 'file' => $filePath, 'id' => $benefitId]);
+
+        flash_set('success', 'Completion report submitted. Thank you!');
+        return $back;
+    }
+
+    /**
+     * Twice-a-semester grade report to the Head of OCA (Art. V Sec. 15-C.1.a,
+     * 15-C.3). A reported failing grade automatically places the student on
+     * probation (Sec. 15-D) — restricting RPAG grant eligibility until a
+     * passing grade is confirmed via a later report or admin override.
+     */
+    public function submitAcademicReport(Request $request)
+    {
+        $user = current_user();
+        $back = redirect()->route('student.dashboard', ['tab' => 'profile']);
+
+        $term = $request->input('term', '');
+        $academicYear = trim($request->input('academic_year', ''));
+        $semester = $request->input('semester', '');
+        $hasFailingGrade = !empty($request->input('has_failing_grade'));
+        $gwa = trim((string) $request->input('gwa', ''));
+        $notes = trim($request->input('notes', ''));
+
+        if (!in_array($term, ['Midterm', 'Final'], true) || $academicYear === '' || !in_array($semester, ['1st', '2nd', 'Summer'], true)) {
+            flash_set('error', 'Please select the term, academic year, and semester.');
+            return $back;
+        }
+
+        $pdo = getDB();
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare(
+                'INSERT INTO academic_monitoring_reports (user_id, term, academic_year, semester, has_failing_grade, gwa, notes)
+                 VALUES (:uid, :term, :year, :semester, :failing, :gwa, :notes)'
+            );
+            $stmt->execute([
+                'uid' => $user['user_id'], 'term' => $term, 'year' => $academicYear, 'semester' => $semester,
+                'failing' => $hasFailingGrade ? 1 : 0, 'gwa' => $gwa !== '' ? $gwa : null, 'notes' => $notes !== '' ? $notes : null,
+            ]);
+
+            $stmt = $pdo->prepare('SELECT profile_id FROM performer_profiles WHERE user_id = :uid');
+            $stmt->execute(['uid' => $user['user_id']]);
+            $profileId = $stmt->fetchColumn();
+            if (!$profileId) {
+                $stmt = $pdo->prepare('INSERT INTO performer_profiles (user_id) VALUES (:uid)');
+                $stmt->execute(['uid' => $user['user_id']]);
+                $profileId = (int) $pdo->lastInsertId();
+            }
+
+            if ($hasFailingGrade) {
+                $stmt = $pdo->prepare(
+                    "UPDATE performer_profiles SET probation_status = 'Probation',
+                     probation_reason = :reason, probation_started_at = NOW() WHERE profile_id = :pid"
+                );
+                $stmt->execute(['reason' => "Failing grade reported for {$term} term, AY {$academicYear} ({$semester} sem).", 'pid' => $profileId]);
+            } else {
+                // A clean report clears an existing probation — Sec. 15-D lifts it
+                // "only after the student has obtained a passing grade."
+                $stmt = $pdo->prepare(
+                    "UPDATE performer_profiles SET probation_status = 'None', probation_reason = NULL, probation_started_at = NULL
+                     WHERE profile_id = :pid AND probation_status = 'Probation'"
+                );
+                $stmt->execute(['pid' => $profileId]);
+            }
+
+            $pdo->commit();
+        } catch (\Exception $e) {
+            $pdo->rollBack();
+            error_log('submitAcademicReport: ' . $e->getMessage());
+            flash_set('error', 'Something went wrong while submitting your report. Please try again.');
+            return $back;
+        }
+
+        flash_set('success', $hasFailingGrade
+            ? 'Report submitted. Since a failing grade was reported, your account has been placed under academic probation per Art. V Sec. 15-D.'
+            : 'Academic report submitted. Thank you!');
         return $back;
     }
 }

@@ -186,6 +186,9 @@
         <div class="mt-3 text-center">
           <a href="<?= e(APP_URL) ?>/track" class="text-xs text-gray-400 hover:text-gray-600 underline">Track My Application (No Login Required)</a>
         </div>
+        <div class="mt-2 text-center">
+          <a href="<?= e(APP_URL) ?>/appeal/apply" class="text-xs text-gray-400 hover:text-gray-600 underline">Not yet a BatStateU student? Apply via Cultural/Artistic Excellence</a>
+        </div>
       </div>
     </div>
   </div>

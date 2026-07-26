@@ -69,6 +69,11 @@ class EventsController extends Controller
                 'requiresTypeName' => $ev['requires_type_name'],
                 'eligible' => $ev['requires_application_type_id'] === null || isset($myApprovedTypeIds[(int) $ev['requires_application_type_id']]),
                 'closingSoon' => $ts >= strtotime('today') && $ts <= strtotime('+3 days') && $ev['status'] === 'Upcoming',
+                // Art. XII (Culture and Arts Competition Participation) — Representation
+                // Guidelines (Sec. 47) and Code of Conduct (Sec. 49) acknowledgment gate,
+                // plus the Post-Competition documentation (Sec. 48) once the event is done.
+                'isCompetition' => stripos((string) $ev['event_type'], 'Competition') !== false,
+                'competitionResult' => $ev['competition_result'],
             ];
         }
 
@@ -94,6 +99,7 @@ class EventsController extends Controller
         $eventId = (int) ($input['event_id'] ?? 0);
         $action = $input['action'] ?? '';
         $travelAcknowledged = !empty($input['travel_acknowledged']);
+        $conductAcknowledged = !empty($input['conduct_acknowledged']);
         $user = current_user();
 
         if (!in_array($action, ['register', 'cancel'], true) || $eventId <= 0) {
@@ -103,7 +109,7 @@ class EventsController extends Controller
         $pdo = getDB();
 
         $stmt = $pdo->prepare(
-            'SELECT e.status, e.requires_travel, e.requires_application_type_id, t.name AS requires_type_name
+            'SELECT e.status, e.requires_travel, e.requires_application_type_id, e.event_type, t.name AS requires_type_name
              FROM events e LEFT JOIN application_types t ON t.type_id = e.requires_application_type_id
              WHERE e.event_id = :id'
         );
@@ -132,16 +138,28 @@ class EventsController extends Controller
             return response()->json(['error' => 'This event requires off-campus travel. Please acknowledge the travel terms to register.', 'requires_travel' => true], 409);
         }
 
+        // Competition events require the Representation Guidelines / Code of Conduct
+        // acknowledgment before the RSVP is recorded (Art. XII Sec. 47, 49).
+        $isCompetition = stripos((string) $event['event_type'], 'Competition') !== false;
+        if ($action === 'register' && $isCompetition && !$conductAcknowledged) {
+            return response()->json(['error' => 'This is a competition event. Please acknowledge the Representation Guidelines and Code of Conduct to register.', 'requires_conduct' => true], 409);
+        }
+
         if ($action === 'register') {
             $travelAcknowledgedAt = ((int) $event['requires_travel'] === 1) ? date('Y-m-d H:i:s') : null;
+            $conductAcknowledgedAt = $isCompetition ? date('Y-m-d H:i:s') : null;
             // Re-registering after a prior cancel flips the same row back to Registered
             // instead of erroring on the (event_id, user_id) unique constraint.
             $stmt = $pdo->prepare(
-                'INSERT INTO event_attendance (event_id, user_id, status, travel_acknowledged_at)
-                 VALUES (:event_id, :user_id, "Registered", :ack)
-                 ON DUPLICATE KEY UPDATE status = "Registered", registered_at = CURRENT_TIMESTAMP, travel_acknowledged_at = :ack2'
+                'INSERT INTO event_attendance (event_id, user_id, status, travel_acknowledged_at, conduct_acknowledged_at)
+                 VALUES (:event_id, :user_id, "Registered", :ack, :conduct)
+                 ON DUPLICATE KEY UPDATE status = "Registered", registered_at = CURRENT_TIMESTAMP, travel_acknowledged_at = :ack2, conduct_acknowledged_at = :conduct2'
             );
-            $stmt->execute(['event_id' => $eventId, 'user_id' => $user['user_id'], 'ack' => $travelAcknowledgedAt, 'ack2' => $travelAcknowledgedAt]);
+            $stmt->execute([
+                'event_id' => $eventId, 'user_id' => $user['user_id'],
+                'ack' => $travelAcknowledgedAt, 'ack2' => $travelAcknowledgedAt,
+                'conduct' => $conductAcknowledgedAt, 'conduct2' => $conductAcknowledgedAt,
+            ]);
         } else {
             $stmt = $pdo->prepare(
                 'UPDATE event_attendance SET status = "Cancelled" WHERE event_id = :event_id AND user_id = :user_id'

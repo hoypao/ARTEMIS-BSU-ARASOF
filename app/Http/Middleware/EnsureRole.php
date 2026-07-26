@@ -13,15 +13,15 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class EnsureRole
 {
-    public function handle(Request $request, Closure $next, string $role): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
         if (!is_logged_in()) {
             return redirect()->route('login');
         }
 
         $user = current_user();
-        if ($user['role'] !== $role) {
-            return redirect()->route($user['role'] === 'admin' ? 'admin.dashboard' : 'student.dashboard');
+        if (!in_array($user['role'], $roles, true)) {
+            return redirect()->route(dashboard_route_for_role($user['role']));
         }
 
         return $next($request);

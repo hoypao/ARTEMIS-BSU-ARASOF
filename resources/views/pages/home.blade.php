@@ -14,8 +14,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/modern.css">
 <style>
+  #bsuHymnWrap iframe { position:absolute; inset:0; width:100%; height:100%; border:0; pointer-events:none; }
   body { font-family: 'Inter', system-ui, sans-serif; }
-  h1, h2 { font-family: 'Inter', system-ui, sans-serif; letter-spacing: -0.01em; }
+  h1, h2 { font-family: 'Inter', system-ui, sans-serif; letter-spacing: -0.01em; text-wrap: balance; }
   h2 { letter-spacing: -0.02em; }
   @keyframes lp-blob1 { 0%,100% { transform: scale(1); opacity:.08; } 50% { transform: scale(1.15); opacity:.14; } }
   @keyframes lp-blob2 { 0%,100% { transform: scale(1); opacity:.08; } 50% { transform: scale(1.2); opacity:.15; } }
@@ -42,14 +43,33 @@
   .hero-copy-slides { display: grid; }
   .hero-copy-slide { grid-row: 1; grid-column: 1; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.5s var(--ease-out-soft); align-self: start; }
   .hero-copy-slide.is-active { opacity: 1; visibility: visible; pointer-events: auto; }
-  .hero-dot { width: 6px; height: 6px; border-radius: 999px; background: rgba(255,255,255,0.35); transition: all 0.35s var(--ease-out-soft); cursor: pointer; }
+  .hero-dot { width: 6px; height: 6px; border-radius: 999px; background: rgba(255,255,255,0.35); transition: width 0.35s var(--ease-out-soft), background 0.35s var(--ease-out-soft); cursor: pointer; }
   .hero-dot.is-active { width: 22px; background: #D4AF37; }
 
   /* Service cards */
-  .service-card { box-shadow: var(--shadow-sm); transition: transform 0.35s var(--ease-out-soft), box-shadow 0.35s var(--ease-out-soft), border-color 0.35s var(--ease-out-soft); }
+  .service-card { position: relative; isolation: isolate; box-shadow: var(--shadow-sm); transition: transform 0.35s var(--ease-out-soft), box-shadow 0.35s var(--ease-out-soft), border-color 0.35s var(--ease-out-soft); }
   .service-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); border-color: transparent; }
   .service-card-icon { transition: transform 0.35s var(--ease-out-soft); }
   .service-card:hover .service-card-icon { transform: scale(1.1) rotate(-4deg); }
+  /* Cursor-following "spotlight" border — gradient traced only along the 1px
+     edge (mask cuts out the fill), tracked via --x/--y set on mousemove in JS.
+     Purely decorative: opacity 0 until hover, so it costs nothing at rest. */
+  .service-card::before {
+    content: ''; position: absolute; inset: 0; border-radius: inherit; z-index: 2;
+    padding: 1px; pointer-events: none; opacity: 0; transition: opacity 0.3s var(--ease-out-soft);
+    background: radial-gradient(240px circle at var(--x, 50%) var(--y, 50%), rgba(212,175,55,0.7), rgba(177,18,38,0.35) 45%, transparent 65%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+  }
+  .service-card:hover::before { opacity: 1; }
+
+  /* Film-grain texture — adds a touch of editorial depth to the hero photography
+     without darkening or muddying it (mix-blend-mode: overlay + very low opacity). */
+  .grain-overlay {
+    position: absolute; inset: 0; z-index: 3; opacity: 0.05; mix-blend-mode: overlay; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
 
   /* Nav auto-hide on scroll-down, reveal on scroll-up */
   #mainNav.nav-hidden { transform: translateY(-150%); }
@@ -66,6 +86,16 @@
   #eventPeekBackdrop.is-open { opacity: 1; }
   #eventPeek { transition: transform 0.35s var(--ease-out-soft), opacity 0.35s var(--ease-out-soft); transform: translateY(24px); opacity: 0; }
   #eventPeek.is-open { transform: translateY(0); opacity: 1; }
+
+  /* This page's own decorative/auto-advancing motion isn't covered by modern.css's
+     shared reduced-motion rule (different animation names, scoped to this file) —
+     without this, the blob pulse, bouncing scroll cue, and hero crossfade would
+     keep animating for visitors who've asked the OS to minimize motion. */
+  @media (prefers-reduced-motion: reduce) {
+    .hero-slide, .hero-copy-slide { transition: none !important; }
+    [style*="lp-blob1"], [style*="lp-blob2"] { animation: none !important; }
+    #heroSection [style*="lp-scroll"] { animation: none !important; }
+  }
 </style>
 </head>
 <body class="min-h-screen bg-background pb-16 md:pb-0">
@@ -123,7 +153,7 @@
     <div class="hero-slide is-active">
       <picture>
         <source media="(max-width: 767px)" srcset="<?= APP_URL ?>/assets/images/familypic-mobile.jpg">
-        <img src="<?= APP_URL ?>/assets/images/familypic.jpg" alt="BatStateU ARASOF-Nasugbu Culture and Arts Office investiture ceremony" class="w-full h-full object-cover" style="object-position: center 25%;">
+        <img src="<?= APP_URL ?>/assets/images/familypic.jpg" alt="BatStateU ARASOF-Nasugbu Culture and Arts Office investiture ceremony" class="w-full h-full object-cover" style="object-position: center 25%;" fetchpriority="high">
       </picture>
       <div class="absolute inset-0 hero-overlay"></div>
     </div>
@@ -136,15 +166,16 @@
       <div class="absolute inset-0 hero-overlay"></div>
     </div>
   </div>
-  <div class="absolute top-20 right-20 w-64 h-64 rounded-full bg-yellow-400 blur-3xl" style="animation: lp-blob1 6s ease-in-out infinite;"></div>
-  <div class="absolute bottom-20 left-10 w-48 h-48 rounded-full bg-red-300 blur-2xl" style="animation: lp-blob2 8s ease-in-out infinite 2s;"></div>
+  <div class="absolute top-20 right-20 w-64 h-64 rounded-full blur-3xl" style="background:#D4AF37; animation: lp-blob1 6s ease-in-out infinite;"></div>
+  <div class="absolute bottom-20 left-10 w-48 h-48 rounded-full blur-2xl" style="background:#B11226; animation: lp-blob2 8s ease-in-out infinite 2s;"></div>
+  <div class="grain-overlay"></div>
 
   <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
     <div class="max-w-3xl hero-copy">
       <div class="hero-copy-slides">
       <div class="hero-copy-slide is-active" data-slide="0">
         <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium mb-6" style="background: rgba(212,175,55,0.2); color:#D4AF37; border:1px solid rgba(212,175,55,0.4);">
-          <i data-lucide="star" class="w-3.5 h-3.5"></i> BatStateU ARASOF-Nasugbu &middot; Culture &amp; Arts Office
+          <i data-lucide="star" class="w-3.5 h-3.5" aria-hidden="true"></i> BatStateU ARASOF-Nasugbu &middot; Culture &amp; Arts Office
         </div>
         <h1 class="text-5xl md:text-7xl font-black text-white mb-4 leading-[0.95] tracking-tight">ARTEMIS</h1>
         <p class="text-sm md:text-xl mb-3" style="color:#D4AF37;">Artistic Resource and Talent Enterprise Management using Intelligent Systems</p>
@@ -152,7 +183,7 @@
       </div>
       <div class="hero-copy-slide" data-slide="1">
         <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium mb-6" style="background: rgba(212,175,55,0.2); color:#D4AF37; border:1px solid rgba(212,175,55,0.4);">
-          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Resident Performing Arts Group
+          <i data-lucide="sparkles" class="w-3.5 h-3.5" aria-hidden="true"></i> Resident Performing Arts Group
         </div>
         <h1 class="text-5xl md:text-7xl font-black text-white mb-4 leading-[0.95] tracking-tight">ARTEMIS</h1>
         <p class="text-sm md:text-xl mb-3" style="color:#D4AF37;">Celebrating Filipino Culture Through Performance</p>
@@ -160,7 +191,7 @@
       </div>
       <div class="hero-copy-slide" data-slide="2">
         <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium mb-6" style="background: rgba(212,175,55,0.2); color:#D4AF37; border:1px solid rgba(212,175,55,0.4);">
-          <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i> One Platform, Every Application
+          <i data-lucide="layout-dashboard" class="w-3.5 h-3.5" aria-hidden="true"></i> One Platform, Every Application
         </div>
         <h1 class="text-5xl md:text-7xl font-black text-white mb-4 leading-[0.95] tracking-tight">ARTEMIS</h1>
         <p class="text-sm md:text-xl mb-3" style="color:#D4AF37;">Stipends, Exemptions, and Recognition — Managed Intelligently</p>
@@ -194,16 +225,8 @@
     <div class="text-center mb-8 md:mb-12 reveal">
       <h2 class="text-2xl md:text-4xl font-bold mb-3 leading-[1.1]" style="color:#1a1a2e;">Discover BatStateU ARASOF-Nasugbu</h2>
     </div>
-    <div class="reveal reveal-2 relative rounded-2xl overflow-hidden" style="aspect-ratio:16/9; box-shadow: 0 24px 60px rgba(0,0,0,0.18); border: 1px solid rgba(212,175,55,0.25);">
-      <iframe
-        src="https://www.youtube.com/embed/wNd8Xvy4XY4?autoplay=1&mute=1&playsinline=1&controls=0&loop=1&playlist=wNd8Xvy4XY4&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1"
-        title="BatStateU ARASOF-Nasugbu"
-        class="absolute inset-0 w-full h-full"
-        style="border:0; pointer-events:none;"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        referrerpolicy="strict-origin-when-cross-origin"
-        allowfullscreen
-        loading="lazy"></iframe>
+    <div id="bsuHymnWrap" class="reveal reveal-2 relative rounded-2xl overflow-hidden" style="aspect-ratio:16/9; box-shadow: 0 24px 60px rgba(0,0,0,0.18); border: 1px solid rgba(212,175,55,0.25);">
+      <div id="bsuHymnPlayer"></div>
     </div>
   </div>
 </section>
@@ -213,7 +236,7 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10 items-center">
       <div class="text-center lg:text-left reveal">
-        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-4" style="background:#FEF3C7; color:#92400E;"><i data-lucide="book-open" class="w-3.5 h-3.5"></i> About ARTEMIS</div>
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-4" style="background:#FEF3C7; color:#92400E;"><i data-lucide="book-open" class="w-3.5 h-3.5" aria-hidden="true"></i> About ARTEMIS</div>
         <h2 class="text-2xl md:text-4xl font-bold mb-4 leading-[1.1]" style="color:#1a1a2e;">Intelligent Management for Culture &amp; Arts</h2>
         <p class="text-gray-600 mb-6 leading-relaxed text-sm md:text-base">The official digital management system of the <strong>BatStateU ARASOF-Nasugbu Culture and Arts Office</strong> — automating auditions, applications, and talent recognition from submission through Chancellor approval.</p>
         <div class="grid grid-cols-2 gap-3">
@@ -224,7 +247,7 @@
               ['workflow', 'Automated Workflows', 'End-to-end processing'],
           ] as $fi => [$icon, $text, $desc]): ?>
             <div class="modern-card reveal reveal-<?= $fi + 1 ?> rounded-xl p-3.5 border border-gray-100 flex flex-col items-center lg:items-start text-center lg:text-left" style="background:#FAFAFA;">
-              <div class="w-8 h-8 rounded-lg flex items-center justify-center mb-2.5" style="background:#FEE2E2;"><i data-lucide="<?= e($icon) ?>" class="w-4 h-4" style="color:#B11226;"></i></div>
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center mb-2.5" style="background:#FEE2E2;"><i data-lucide="<?= e($icon) ?>" class="w-4 h-4" style="color:#B11226;" aria-hidden="true"></i></div>
               <div class="text-xs font-semibold text-gray-800 leading-snug mb-0.5"><?= e($text) ?></div>
               <div class="text-xs text-gray-400 leading-snug"><?= e($desc) ?></div>
             </div>
@@ -234,12 +257,12 @@
 
       <div class="relative reveal reveal-2">
         <div class="relative rounded-2xl overflow-hidden shadow-2xl">
-          <img src="https://images.unsplash.com/photo-1763656448109-033f71551cad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjdWx0dXJhbCUyMGRhbmNlJTIwcGVyZm9ybWFuY2UlMjBjb2xvcmZ1bHxlbnwxfHx8fDE3NzQ4NjA4NTl8MA&ixlib=rb-4.1.0&q=80&w=1080" alt="cultural performance" class="w-full h-80 object-cover">
+          <img src="https://images.unsplash.com/photo-1763656448109-033f71551cad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjdWx0dXJhbCUyMGRhbmNlJTIwcGVyZm9ybWFuY2UlMjBjb2xvcmZ1bHxlbnwxfHx8fDE3NzQ4NjA4NTl8MA&ixlib=rb-4.1.0&q=80&w=1080" alt="cultural performance" class="w-full h-80 object-cover" loading="lazy">
           <div class="absolute inset-0" style="background: linear-gradient(to top, rgba(177,18,38,0.5), transparent);"></div>
         </div>
         <div class="hidden sm:block absolute -bottom-4 -right-4 bg-white rounded-2xl p-4 shadow-xl border border-gray-100">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:#FEE2E2;"><i data-lucide="star" class="w-5 h-5" style="color:#B11226;"></i></div>
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:#FEE2E2;"><i data-lucide="star" class="w-5 h-5" style="color:#B11226;" aria-hidden="true"></i></div>
             <div><div class="text-xs text-gray-500">Recognition Awards</div><div class="font-bold text-sm" style="color:#B11226;">BANTOG <?= date('Y') ?></div></div>
           </div>
         </div>
@@ -261,7 +284,7 @@
       <?php foreach ($services as $si => $service): ?>
         <div class="service-card reveal reveal-<?= ($si % 3) + 1 ?> bg-white rounded-2xl p-6 border border-gray-100 cursor-pointer">
           <div class="service-card-icon w-12 h-12 rounded-xl flex items-center justify-center mb-4" style="background: <?= $service['color'] === '#B11226' ? '#FEE2E2' : '#FEF9E7' ?>;">
-            <i data-lucide="<?= e($service['icon']) ?>" class="w-6 h-6" style="color:<?= e($service['color']) ?>;"></i>
+            <i data-lucide="<?= e($service['icon']) ?>" class="w-6 h-6" style="color:<?= e($service['color']) ?>;" aria-hidden="true"></i>
           </div>
           <h3 class="font-bold text-base mb-2" style="color:#1a1a2e;"><?= e($service['title']) ?></h3>
           <p class="text-sm text-gray-500 leading-relaxed"><?= e($service['desc']) ?></p>
@@ -277,14 +300,14 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
 
       <div>
-        <div class="flex items-center gap-2 mb-2"><i data-lucide="bell" class="w-4 h-4" style="color:#B11226;"></i><span class="text-xs font-medium uppercase tracking-wider" style="color:#B11226;">Announcements</span></div>
+        <div class="flex items-center gap-2 mb-2"><i data-lucide="bell" class="w-4 h-4" style="color:#B11226;" aria-hidden="true"></i><span class="text-xs font-medium uppercase tracking-wider" style="color:#B11226;">Announcements</span></div>
         <h2 class="text-xl md:text-3xl font-bold mb-4" style="color:#1a1a2e;">Latest News &amp; Updates</h2>
         <div class="flex flex-col gap-4">
           <?php if ($isStudent && $personalAlerts): ?>
             <?php foreach ($personalAlerts as $i => $alert): ?>
               <a href="<?= e(APP_URL) ?>/student/dashboard?tab=applications" class="reveal reveal-<?= $i + 1 ?> flex gap-3 p-5 rounded-2xl border cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5" style="border-color: <?= $alert['urgent'] ? 'rgba(177,18,38,0.25)' : '#f3f4f6' ?>; background: <?= $alert['urgent'] ? 'rgba(177,18,38,0.03)' : '#fff' ?>; box-shadow: var(--shadow-sm);">
                 <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style="background: <?= e($alert['color']) ?>18;">
-                  <i data-lucide="<?= e($alert['icon']) ?>" class="w-4 h-4" style="color: <?= e($alert['color']) ?>;"></i>
+                  <i data-lucide="<?= e($alert['icon']) ?>" class="w-4 h-4" style="color: <?= e($alert['color']) ?>;" aria-hidden="true"></i>
                 </div>
                 <div class="min-w-0">
                   <div class="flex items-center gap-2 mb-1">
@@ -304,7 +327,7 @@
           <?php foreach ($announcements as $i => $a): $accent = $i % 2 === 0 ? '#B11226' : '#D4AF37'; ?>
             <div class="reveal reveal-<?= $i + 1 ?> flex gap-3 p-5 rounded-2xl border border-gray-100 hover:border-red-100 cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5" style="box-shadow: var(--shadow-sm);">
               <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style="background: <?= $accent ?>18;">
-                <i data-lucide="megaphone" class="w-4 h-4" style="color: <?= $accent ?>;"></i>
+                <i data-lucide="megaphone" class="w-4 h-4" style="color: <?= $accent ?>;" aria-hidden="true"></i>
               </div>
               <div class="min-w-0">
                 <div class="text-xs text-gray-400 mb-1"><?= format_date($a['created_at'], 'F j, Y') ?></div>
@@ -317,7 +340,7 @@
       </div>
 
       <div id="events">
-        <div class="flex items-center gap-2 mb-2"><i data-lucide="calendar" class="w-4 h-4" style="color:#D4AF37;"></i><span class="text-xs font-medium uppercase tracking-wider" style="color:#D4AF37;">Upcoming Events</span></div>
+        <div class="flex items-center gap-2 mb-2"><i data-lucide="calendar" class="w-4 h-4" style="color:#D4AF37;" aria-hidden="true"></i><span class="text-xs font-medium uppercase tracking-wider" style="color:#D4AF37;">Upcoming Events</span></div>
         <h2 class="text-xl md:text-3xl font-bold mb-4" style="color:#1a1a2e;">Cultural Calendar</h2>
         <div class="flex flex-col gap-4">
           <?php if (!$upcomingEvents): ?>
@@ -326,8 +349,8 @@
           <?php foreach ($upcomingEvents as $i => $ev): $ts = strtotime($ev['event_date']);
             $evJs = $eventsForJs[$i]; ?>
             <div class="event-card reveal reveal-<?= $i + 1 ?> relative rounded-2xl overflow-hidden border transition-all hover:shadow-lg hover:-translate-y-0.5" data-idx="<?= $i ?>" data-event-id="<?= (int) $ev['event_id'] ?>" data-closing-soon="<?= $evJs['closingSoon'] ? '1' : '0' ?>" style="box-shadow: var(--shadow-sm); border-color: <?= $evJs['registered'] ? 'rgba(34,197,94,0.35)' : '#f3f4f6' ?>;">
-              <div class="event-peek-trigger p-5 flex items-start gap-4 cursor-pointer group">
-                <div class="w-14 h-14 rounded-xl flex flex-col items-center justify-center flex-shrink-0 text-white" style="background:<?= e($ev['color_hex'] ?: '#B11226') ?>;">
+              <button type="button" class="event-peek-trigger w-full text-left bg-transparent border-0 p-5 flex items-start gap-4 cursor-pointer group">
+                <div class="w-14 h-14 rounded-xl flex flex-col items-center justify-center flex-shrink-0 text-white" style="background:<?= e($ev['color_hex'] ?: '#B11226') ?>;" aria-hidden="true">
                   <span class="text-xl font-bold leading-none"><?= e(date('j', $ts)) ?></span>
                   <span class="text-xs opacity-80"><?= e(date('M', $ts)) ?></span>
                 </div>
@@ -335,30 +358,30 @@
                   <div class="flex items-center flex-wrap gap-1.5 mb-1">
                     <div class="font-semibold text-sm" style="color:#1a1a2e;"><?= e($ev['title']) ?></div>
                     <?php if ($evJs['registered']): ?>
-                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold" style="background:#BBF7D0; color:#166534;"><i data-lucide="check" class="w-2.5 h-2.5"></i> Registered</span>
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold" style="background:#BBF7D0; color:#166534;"><i data-lucide="check" class="w-2.5 h-2.5" aria-hidden="true"></i> Registered</span>
                     <?php elseif ($evJs['closingSoon']): ?>
-                      <span class="event-closing-badge inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold" style="background:#FEF3C7; color:#92400E;"><i data-lucide="alarm-clock" class="w-2.5 h-2.5"></i> Closing soon</span>
+                      <span class="event-closing-badge inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold" style="background:#FEF3C7; color:#92400E;"><i data-lucide="alarm-clock" class="w-2.5 h-2.5" aria-hidden="true"></i> Closing soon</span>
                     <?php endif; ?>
                     <?php if ($evJs['requiresTravel']): ?>
-                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold" style="background:#FEF3C7; color:#92400E;"><i data-lucide="plane" class="w-2.5 h-2.5"></i> Off-campus travel</span>
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold" style="background:#FEF3C7; color:#92400E;"><i data-lucide="plane" class="w-2.5 h-2.5" aria-hidden="true"></i> Off-campus travel</span>
                     <?php endif; ?>
                     <?php if ($evJs['requiresTypeName']): ?>
-                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold" style="background:#EDE9FE; color:#6D28D9;"><i data-lucide="shield-check" class="w-2.5 h-2.5"></i> Approved <?= e($evJs['requiresTypeName']) ?> only</span>
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold" style="background:#EDE9FE; color:#6D28D9;"><i data-lucide="shield-check" class="w-2.5 h-2.5" aria-hidden="true"></i> Approved <?= e($evJs['requiresTypeName']) ?> only</span>
                     <?php endif; ?>
                   </div>
-                  <div class="flex items-center gap-1.5 text-xs text-gray-500"><i data-lucide="map-pin" class="w-3 h-3"></i><?= e($ev['location']) ?></div>
-                  <div class="flex items-center gap-1.5 text-xs text-gray-400 mt-1"><i data-lucide="calendar" class="w-3 h-3"></i><?= e(date('F j, Y', $ts)) ?></div>
+                  <div class="flex items-center gap-1.5 text-xs text-gray-500"><i data-lucide="map-pin" class="w-3 h-3" aria-hidden="true"></i><?= e($ev['location']) ?></div>
+                  <div class="flex items-center gap-1.5 text-xs text-gray-400 mt-1"><i data-lucide="calendar" class="w-3 h-3" aria-hidden="true"></i><?= e(date('F j, Y', $ts)) ?></div>
                 </div>
-                <i data-lucide="chevron-right" class="w-4 h-4 text-gray-300 group-hover:text-red-500 transition-colors mt-1 flex-shrink-0"></i>
-              </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-gray-300 group-hover:text-red-500 transition-colors mt-1 flex-shrink-0" aria-hidden="true"></i>
+              </button>
             </div>
           <?php endforeach; ?>
         </div>
 
         <a href="<?= e(APP_URL) ?>/events" class="mt-6 rounded-2xl overflow-hidden relative h-36 cursor-pointer block transition-transform hover:scale-[1.01]">
-          <img src="https://images.unsplash.com/photo-1762158008445-8355e4137bd0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNpYyUyMGNob2lyJTIwc2luZ2luZyUyMHN0dWRlbnRzfGVufDF8fHx8MTc3NDk1MjY5NXww&ixlib=rb-4.1.0&q=80&w=1080" alt="cultural event" class="w-full h-full object-cover">
+          <img src="https://images.unsplash.com/photo-1762158008445-8355e4137bd0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNpYyUyMGNob2lyJTIwc2luZ2luZyUyMHN0dWRlbnRzfGVufDF8fHx8MTc3NDk1MjY5NXww&ixlib=rb-4.1.0&q=80&w=1080" alt="cultural event" class="w-full h-full object-cover" loading="lazy">
           <div class="absolute inset-0 flex items-center justify-center gap-2" style="background: rgba(177,18,38,0.7);">
-            <span class="text-white font-bold text-sm">View All Events</span> <i data-lucide="chevron-right" class="w-4 h-4 text-white"></i>
+            <span class="text-white font-bold text-sm">View All Events</span> <i data-lucide="chevron-right" class="w-4 h-4 text-white" aria-hidden="true"></i>
           </div>
         </a>
       </div>
@@ -554,6 +577,45 @@ var EVENTS = <?= json_encode($eventsForJs, JSON_UNESCAPED_SLASHES | JSON_UNESCAP
 var APP_URL = <?= json_encode(APP_URL) ?>;
 var CSRF_TOKEN = <?= json_encode(csrf_token()) ?>;
 lucide.createIcons();
+
+// BatStateU Hymn background video — driven through the real IFrame Player API
+// (not just ?autoplay=1 URL params) so we can force playback to actually start
+// and keep restarting it if YouTube ever drops to paused/buffering/cued. Those
+// states are exactly when YouTube shows its own title card, "More videos," and
+// logo overlay — controls=0 only hides the scrub bar, it never hides that.
+(function () {
+  var tag = document.createElement('script');
+  tag.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(tag);
+})();
+function onYouTubeIframeAPIReady() {
+  if (!document.getElementById('bsuHymnPlayer')) return;
+  new YT.Player('bsuHymnPlayer', {
+    videoId: 'wNd8Xvy4XY4',
+    playerVars: {
+      autoplay: 1, mute: 1, controls: 0, loop: 1, playlist: 'wNd8Xvy4XY4',
+      rel: 0, modestbranding: 1, iv_load_policy: 3, disablekb: 1, playsinline: 1,
+    },
+    events: {
+      onReady: function (e) { e.target.mute(); e.target.playVideo(); },
+      onStateChange: function (e) {
+        if (e.data !== YT.PlayerState.PLAYING && e.data !== YT.PlayerState.BUFFERING) {
+          e.target.playVideo();
+        }
+      },
+    },
+  });
+}
+
+// Service card cursor-spotlight — tracks pointer position into --x/--y so the
+// CSS gradient border in .service-card::before can follow the cursor.
+document.querySelectorAll('.service-card').forEach(function (card) {
+  card.addEventListener('mousemove', function (e) {
+    var rect = card.getBoundingClientRect();
+    card.style.setProperty('--x', (e.clientX - rect.left) + 'px');
+    card.style.setProperty('--y', (e.clientY - rect.top) + 'px');
+  });
+});
 
 // Scroll-aware navbar — tints on scroll, hides on scroll-down, reveals on scroll-up
 var nav = document.getElementById('mainNav');
@@ -794,8 +856,11 @@ document.querySelectorAll('.event-register-btn').forEach(function (btn) {
     lucide.createIcons();
   }
   function next() { show((idx + 1) % slides.length); }
-  function start() { timer = setInterval(next, 6500); }
+  function start() { if (reduceMotion.matches) return; timer = setInterval(next, 6500); }
   function stop() { clearInterval(timer); }
+  // Visitors who've asked their OS to minimize motion still get manual dot
+  // navigation — they just don't get slides changing on their own.
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   dots.forEach(function (d) { d.addEventListener('click', function () { show(parseInt(d.dataset.dot, 10)); stop(); start(); }); });
   heroSection.addEventListener('mouseenter', stop);
   heroSection.addEventListener('mouseleave', start);

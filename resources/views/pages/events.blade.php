@@ -201,6 +201,10 @@
         <div class="text-[10px] uppercase tracking-wide font-semibold text-gray-600 mb-2">About this Event</div>
         <p class="text-sm text-gray-600 leading-relaxed" id="modalDescription"></p>
       </div>
+      <div class="hidden rounded-xl p-4 border" id="modalResultBox" style="background:#FEF9C3; border-color:#FDE68A;">
+        <div class="text-[10px] uppercase tracking-wide font-semibold mb-2 flex items-center gap-1.5" style="color:#92400E;"><i data-lucide="trophy" class="w-3.5 h-3.5"></i> Result (Art. XII Sec. 48)</div>
+        <p class="text-sm leading-relaxed" style="color:#78350F;" id="modalResultText"></p>
+      </div>
       <div class="flex gap-3">
         <button type="button" id="modalCloseBtn2" class="flex-1 py-3 rounded-xl text-sm font-medium border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">Close</button>
         <button type="button" id="modalCtaBtn" class="flex-1 py-3 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 hover:opacity-90 transition-opacity" style="background: linear-gradient(135deg, #B11226, #7a0d1a); box-shadow: 0 4px 16px rgba(177,18,38,0.25);">
@@ -235,6 +239,41 @@
       <div class="flex gap-3">
         <button type="button" id="travelAckCancelBtn" class="flex-1 py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50">Cancel</button>
         <button type="button" id="travelAckConfirmBtn" disabled class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-opacity hover:opacity-90" style="background:#B11226;">Acknowledge &amp; Register</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COMPETITION CODE OF CONDUCT (competition-type event RSVP gate, Art. XII Sec. 47/49) -->
+<div id="conductAckBackdrop" class="hidden fixed inset-0" style="background: rgba(0,0,0,0.45); z-index:60;"></div>
+<div id="conductAckModal" class="hidden fixed inset-0 items-center justify-center p-4" style="z-index:70;">
+  <div class="modal-panel bg-white w-full rounded-2xl overflow-hidden" style="max-width:440px; box-shadow: 0 24px 60px rgba(0,0,0,0.25);">
+    <div class="px-5 pt-5 pb-4" style="background: linear-gradient(135deg, #B11226, #7a0d1a);">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style="background: rgba(255,255,255,0.2);"><i data-lucide="shield-check" class="w-4 h-4 text-white"></i></div>
+          <h3 class="text-white font-bold text-sm">Competition Representation &amp; Conduct</h3>
+        </div>
+        <button type="button" id="conductAckCloseBtn" class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-colors" style="background: rgba(255,255,255,0.2);" aria-label="Close notice">
+          <i data-lucide="x" class="w-4 h-4 text-white"></i>
+        </button>
+      </div>
+    </div>
+    <div class="px-5 py-4">
+      <p class="text-sm text-gray-700 leading-relaxed mb-2">By registering for <span id="conductAckEventTitle" class="font-semibold"></span>, you agree to (Art. XII):</p>
+      <ul class="text-xs text-gray-600 leading-relaxed mb-3 flex flex-col gap-1.5 list-disc pl-4">
+        <li>Conduct yourself with professionalism and integrity, on and off the competition venue (Sec. 47).</li>
+        <li>Respect cultural diversity and avoid cultural appropriation, offensive content, or misrepresentation of indigenous traditions (Sec. 47).</li>
+        <li>Represent BatStateU ARASOF-Nasugbu using only OCA-approved logos, banners, or identifying symbols (Sec. 47).</li>
+        <li>Understand that plagiarism, disrespect towards other participants/organizers, or unethical behavior leads to disqualification and possible disciplinary action (Sec. 49).</li>
+      </ul>
+      <label class="flex items-start gap-2.5 mb-4 cursor-pointer">
+        <input type="checkbox" id="conductAckCheckbox" class="mt-0.5">
+        <span class="text-xs text-gray-600">I have read and agree to the Representation Guidelines and Code of Conduct.</span>
+      </label>
+      <div class="flex gap-3">
+        <button type="button" id="conductAckCancelBtn" class="flex-1 py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50">Cancel</button>
+        <button type="button" id="conductAckConfirmBtn" disabled class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-opacity hover:opacity-90" style="background:#B11226;">Agree &amp; Register</button>
       </div>
     </div>
   </div>
@@ -446,6 +485,9 @@ function openEventModal(id) {
   document.getElementById('modalRestrictedBadge').classList.toggle('flex', !!ev.requiresTypeName);
   document.getElementById('modalRestrictedBadgeText').textContent = ev.requiresTypeName ? ('Approved ' + ev.requiresTypeName + ' only') : '';
   document.getElementById('modalDescription').textContent = ev.description;
+  var hasResult = ev.status === 'Completed' && !!ev.competitionResult;
+  document.getElementById('modalResultBox').classList.toggle('hidden', !hasResult);
+  if (hasResult) document.getElementById('modalResultText').textContent = ev.competitionResult;
   lucide.createIcons();
 
   var metaFields = [
@@ -489,12 +531,17 @@ function updateModalCta(ev) {
   } else if (!ev.eligible) {
     label.textContent = 'Approved ' + ev.requiresTypeName + ' applicants only';
     btn.disabled = true; btn.style.opacity = '0.5';
+  } else if (ev.isCompetition) {
+    // Competition conduct acknowledgment gates first; if the event is also
+    // off-campus, the travel acknowledgment follows once conduct is agreed to.
+    label.textContent = 'RSVP to this Event';
+    btn.onclick = function () { openConductAck(ev); };
   } else if (ev.requiresTravel) {
     label.textContent = 'RSVP to this Event';
     btn.onclick = function () { openTravelAck(ev); };
   } else {
     label.textContent = 'RSVP to this Event';
-    btn.onclick = function () { doRsvp(ev.id, 'register', false); };
+    btn.onclick = function () { doRsvp(ev.id, 'register', false, false); };
   }
 }
 var toastTimer = null;
@@ -516,7 +563,7 @@ function showToast(message, type) {
     toastHideTimer = setTimeout(function () { el.classList.add('hidden'); el.classList.remove('flex'); }, 300);
   }, 3000);
 }
-function doRsvp(eventId, action, travelAcknowledged) {
+function doRsvp(eventId, action, travelAcknowledged, conductAcknowledged) {
   var btn = document.getElementById('modalCtaBtn');
   var label = document.getElementById('modalCtaLabel');
   var originalLabel = label.textContent;
@@ -524,7 +571,7 @@ function doRsvp(eventId, action, travelAcknowledged) {
   label.textContent = action === 'register' ? 'Registering…' : 'Cancelling…';
   fetch(APP_URL + '/events/rsvp', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ csrf_token: CSRF_TOKEN, event_id: eventId, action: action, travel_acknowledged: !!travelAcknowledged }),
+    body: JSON.stringify({ csrf_token: CSRF_TOKEN, event_id: eventId, action: action, travel_acknowledged: !!travelAcknowledged, conduct_acknowledged: !!conductAcknowledged }),
   }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
     .then(function (res) {
       if (!res.ok) {
@@ -576,8 +623,44 @@ travelAckBackdrop.addEventListener('click', closeTravelAck);
 travelAckConfirmBtn.addEventListener('click', function () {
   var ev = pendingTravelEvent;
   closeTravelAck();
-  if (ev) doRsvp(ev.id, 'register', true);
+  if (ev) doRsvp(ev.id, 'register', true, !!ev.isCompetition);
 });
+
+// Competition events route through this acknowledgment first (Art. XII Sec.
+// 47/49); off-campus competitions then chain into the travel acknowledgment.
+var conductAckModal = document.getElementById('conductAckModal');
+var conductAckBackdrop = document.getElementById('conductAckBackdrop');
+var conductAckCheckbox = document.getElementById('conductAckCheckbox');
+var conductAckConfirmBtn = document.getElementById('conductAckConfirmBtn');
+var pendingConductEvent = null;
+function openConductAck(ev) {
+  pendingConductEvent = ev;
+  document.getElementById('conductAckEventTitle').textContent = ev.title;
+  conductAckCheckbox.checked = false;
+  conductAckConfirmBtn.disabled = true;
+  conductAckModal.classList.remove('hidden'); conductAckModal.classList.add('flex');
+  conductAckBackdrop.classList.remove('hidden');
+  requestAnimationFrame(function () { conductAckModal.classList.add('is-open'); conductAckBackdrop.classList.add('is-open'); });
+}
+function closeConductAck() {
+  pendingConductEvent = null;
+  conductAckModal.classList.remove('is-open'); conductAckBackdrop.classList.remove('is-open');
+  setTimeout(function () {
+    conductAckModal.classList.add('hidden'); conductAckModal.classList.remove('flex');
+    conductAckBackdrop.classList.add('hidden');
+  }, 250);
+}
+conductAckCheckbox.addEventListener('change', function () { conductAckConfirmBtn.disabled = !conductAckCheckbox.checked; });
+document.getElementById('conductAckCancelBtn').addEventListener('click', closeConductAck);
+document.getElementById('conductAckCloseBtn').addEventListener('click', closeConductAck);
+conductAckBackdrop.addEventListener('click', closeConductAck);
+conductAckConfirmBtn.addEventListener('click', function () {
+  var ev = pendingConductEvent;
+  closeConductAck();
+  if (!ev) return;
+  if (ev.requiresTravel) { openTravelAck(ev); } else { doRsvp(ev.id, 'register', false, true); }
+});
+
 document.getElementById('modalCloseBtn').addEventListener('click', closeEventModal);
 document.getElementById('modalCloseBtn2').addEventListener('click', closeEventModal);
 eventModal.addEventListener('click', function (e) { if (e.target === eventModal) closeEventModal(); });

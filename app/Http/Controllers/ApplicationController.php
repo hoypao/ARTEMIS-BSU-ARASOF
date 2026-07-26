@@ -33,6 +33,19 @@ class ApplicationController extends Controller
         }
         $typeCode = $type['code'];
 
+        // Academic probation restricts eligibility for RPAG grants (Art. V Sec. 15-D)
+        // until a passing grade is confirmed — applies to the benefit-granting types only;
+        // audition/external-invitation/appeal aren't RPAG "grants" in the Manual's sense.
+        if (in_array($typeCode, ['stipend', 'pathfit_exemption', 'bantog_recognition'], true)) {
+            $stmt = $pdo->prepare("SELECT probation_status, probation_reason FROM performer_profiles WHERE user_id = :uid");
+            $stmt->execute(['uid' => $user['user_id']]);
+            $profileRow = $stmt->fetch();
+            if ($profileRow && $profileRow['probation_status'] === 'Probation') {
+                flash_set('error', 'You are currently on academic probation and are not eligible for this benefit until a passing grade is confirmed (Art. V Sec. 15-D). ' . ($profileRow['probation_reason'] ?: ''));
+                return redirect()->route('student.dashboard');
+            }
+        }
+
         $allowedExt = ['pdf', 'jpg', 'jpeg', 'png'];
         $maxSize = 10 * 1024 * 1024; // 10MB per file
         $uploadedFiles = [];
@@ -118,17 +131,31 @@ class ApplicationController extends Controller
         if ($typeCode === 'bantog_recognition') {
             $bantogCategory = trim($request->input('bantog_category', '')) !== '' ? trim($request->input('bantog_category')) : null;
         }
+        $pathfitFacultyId = null;
+        if ($typeCode === 'pathfit_exemption') {
+            $requestedFacultyId = (int) $request->input('pathfit_faculty_id', 0);
+            if ($requestedFacultyId > 0) {
+                $stmt = $pdo->prepare("SELECT user_id FROM users WHERE user_id = :id AND role = 'pathfit_faculty' AND status = 'active'");
+                $stmt->execute(['id' => $requestedFacultyId]);
+                $pathfitFacultyId = $stmt->fetchColumn() ?: null;
+            }
+            if (!$pathfitFacultyId) {
+                flash_set('error', 'Please select your PATHFit instructor.');
+                return redirect()->route('student.dashboard');
+            }
+        }
 
         $pdo->beginTransaction();
         try {
             $stmt = $pdo->prepare(
-                'INSERT INTO applications (application_code, user_id, type_id, status, current_stage, details, hours_claimed, bantog_category)
-                 VALUES (:code, :user_id, :type_id, "Pending", 1, :details, :hours_claimed, :bantog_category)'
+                'INSERT INTO applications (application_code, user_id, type_id, pathfit_faculty_id, status, current_stage, details, hours_claimed, bantog_category)
+                 VALUES (:code, :user_id, :type_id, :pathfit_faculty_id, "Pending", 1, :details, :hours_claimed, :bantog_category)'
             );
             $stmt->execute([
                 'code' => $applicationCode,
                 'user_id' => $user['user_id'],
                 'type_id' => $typeId,
+                'pathfit_faculty_id' => $pathfitFacultyId,
                 'details' => $details !== '' ? $details : null,
                 'hours_claimed' => $hoursClaimed,
                 'bantog_category' => $bantogCategory,
@@ -238,7 +265,7 @@ class ApplicationController extends Controller
         }
 
         $pdo = getDB();
-        $admin = current_user();
+        $reviewer = current_user();
 
         if ($action === 'update_benefit') {
             $benefitId = (int) ($input['benefit_id'] ?? 0);
@@ -266,6 +293,23 @@ class ApplicationController extends Controller
             return response()->json(['error' => 'Application not found.'], 404);
         }
 
+        // Non-admin reviewers (currently: PATHFit Faculty, WI-OCA-04) may only
+        // approve/reject the specific PATHFit Exemption applications assigned to
+        // them — everything else (advance/remark/score/other applicants) stays
+        // admin-only.
+        if ($reviewer['role'] !== 'admin') {
+            if (!in_array($action, ['approve', 'reject'], true)) {
+                return response()->json(['error' => 'Not authorized for this action.'], 403);
+            }
+            if ($reviewer['role'] === 'pathfit_faculty') {
+                if ((int) ($app['pathfit_faculty_id'] ?? 0) !== $reviewer['user_id']) {
+                    return response()->json(['error' => 'This application is not assigned to you.'], 403);
+                }
+            } else {
+                return response()->json(['error' => 'Not authorized for this action.'], 403);
+            }
+        }
+
         if ($action === 'remark') {
             $stmt = $pdo->prepare('UPDATE applications SET remarks = :remarks WHERE application_id = :id');
             $stmt->execute(['remarks' => $remarks, 'id' => $applicationId]);
@@ -279,7 +323,7 @@ class ApplicationController extends Controller
                 'stage' => $app['current_stage'],
                 'status' => $app['status'],
                 'remarks' => $remarks,
-                'changed_by' => $admin['user_id'],
+                'changed_by' => $reviewer['user_id'],
             ]);
 
             return response()->json(['success' => true, 'remarks' => $remarks]);
@@ -292,11 +336,22 @@ class ApplicationController extends Controller
             if ($training < 0 || $training > 20 || $production < 0 || $production > 40 || $award < 0 || $award > 40) {
                 return response()->json(['error' => 'Scores must be within range: Training/Seminar 0-20, Production/Presentation 0-40, Award Achieved 0-40.'], 422);
             }
+
+            // Final honor granted by the evaluation committee (Art. VIII Sec. 26) —
+            // distinct from bantog_category, which is only the discipline the
+            // applicant applied under. Must be one of the official award titles,
+            // an empty string clears a previously-set award.
+            $awardTitle = trim((string) ($input['award_title'] ?? ''));
+            $knownTitles = array_merge(...array_values(ARTEMIS_BANTOG_AWARDS));
+            if ($awardTitle !== '' && !in_array($awardTitle, $knownTitles, true)) {
+                return response()->json(['error' => 'Unrecognized award title.'], 422);
+            }
+
             $stmt = $pdo->prepare(
-                'UPDATE applications SET bantog_score_training = :training, bantog_score_production = :production, bantog_score_award = :award WHERE application_id = :id'
+                'UPDATE applications SET bantog_score_training = :training, bantog_score_production = :production, bantog_score_award = :award, bantog_award_title = :award_title WHERE application_id = :id'
             );
-            $stmt->execute(['training' => $training, 'production' => $production, 'award' => $award, 'id' => $applicationId]);
-            return response()->json(['success' => true, 'total' => $training + $production + $award]);
+            $stmt->execute(['training' => $training, 'production' => $production, 'award' => $award, 'award_title' => $awardTitle !== '' ? $awardTitle : null, 'id' => $applicationId]);
+            return response()->json(['success' => true, 'total' => $training + $production + $award, 'awardTitle' => $awardTitle !== '' ? $awardTitle : null]);
         }
 
         if (in_array($app['status'], ['Approved', 'Rejected'], true)) {
@@ -329,7 +384,7 @@ class ApplicationController extends Controller
             $stmt->execute([
                 'status' => $newStatus,
                 'stage' => $newStage,
-                'reviewer' => $admin['user_id'],
+                'reviewer' => $reviewer['user_id'],
                 'remarks' => $remarks !== '' ? $remarks : $app['remarks'],
                 'decided_at' => $decidedAt,
                 'id' => $applicationId,
@@ -344,7 +399,7 @@ class ApplicationController extends Controller
                 'stage' => $newStage,
                 'status' => $newStatus,
                 'remarks' => $remarks !== '' ? $remarks : null,
-                'changed_by' => $admin['user_id'],
+                'changed_by' => $reviewer['user_id'],
             ]);
 
             $createdBenefit = null;
@@ -379,7 +434,8 @@ class ApplicationController extends Controller
                         $benefitRemarks .= ' Grade of 1.00 per Art. X Sec. 38.';
                     } elseif ($typeName === 'BANTOG Recognition' && $app['bantog_score_training'] !== null) {
                         $total = (int) $app['bantog_score_training'] + (int) $app['bantog_score_production'] + (int) $app['bantog_score_award'];
-                        $benefitRemarks .= ' ' . ($app['bantog_category'] ?: 'BANTOG') . " — Score: {$total}/100 (Training {$app['bantog_score_training']}/20, Production {$app['bantog_score_production']}/40, Award {$app['bantog_score_award']}/40).";
+                        $awardLabel = $app['bantog_award_title'] ?: ($app['bantog_category'] ?: 'BANTOG');
+                        $benefitRemarks .= ' ' . $awardLabel . " — Score: {$total}/100 (Training {$app['bantog_score_training']}/20, Production {$app['bantog_score_production']}/40, Award {$app['bantog_score_award']}/40).";
                     }
 
                     $stmt = $pdo->prepare(
