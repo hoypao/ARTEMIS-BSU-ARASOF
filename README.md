@@ -50,27 +50,20 @@ documents.
   support / student mentorship tracking, QEO KPI reporting, and system settings
 
 **Trainer / Coach**
-- View assigned RPAG members and their application/endorsement status
-- Self-report training hours rendered (auto-computes honorarium from their rate)
-- Digitally endorse a member's application where required
-- Rate Audition/Recruitment applicants with a score and Pass/Fail decision that
-  feeds the RPAG's admission deliberation (WI-OCA-03)
+- Review applications submitted by assigned RPAG members and provide the
+  required endorsement, score, and Pass/Fail recommendation
 
 **PATHFit Faculty**
-- Review PATHFit exemption requests naming them specifically, with an
-  auto-generated eligibility justification per applicant
+- Review PATHFit exemption applications assigned to them and provide their
+  recommendation based on the applicant's eligibility
 
 **College Dean**
-- Review First Violation faculty non-compliance complaints filed within their
-  own college and issue the written-warning step (Repeated Violations
-  auto-escalate to a Grievance Board outside the Dean's authority)
+- Review applications and requests forwarded to their college and provide the
+  dean's recommendation or decision
 
 **TAO Central**
-- Review admission appeals that have cleared OCA screening — the back half of
-  the Art. IV Sec. 11-C chain (Evaluation Stage and For Approval (President via
-  TAO)) — from a dedicated dashboard at `/tao/dashboard` that carries only
-  those appeals and no other office's data. Screening before that window stays
-  with OCA, and a decided appeal can't be reopened
+- Review admission appeal applications forwarded by OCA and provide the final
+  TAO recommendation or decision
 
 ## Tech Stack
 
