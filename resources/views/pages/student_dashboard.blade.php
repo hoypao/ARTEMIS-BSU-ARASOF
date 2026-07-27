@@ -15,13 +15,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/modern.css">
+<script src="<?= APP_URL ?>/assets/js/shell-scroll.js" defer></script>
 <style>
   /* Scroll progress bar — sits above the sidebar/header, fills with scroll depth */
-  #scrollProgressBar { position: fixed; top: 0; left: 0; height: 3px; width: 0%; z-index: 50; background: #B11226; transition: width 0.1s linear; pointer-events: none; }
-  @media (prefers-reduced-motion: reduce) { #scrollProgressBar { transition: none; } }
 
-  /* Hide the native scrollbar while keeping scroll behavior — the bar above is the scroll indicator, matching the landing page. */
-  html, body { overflow-x: hidden; scrollbar-width: none; -ms-overflow-style: none; }
+  /* Hide the native scrollbar while keeping scroll behavior — the bar above is the scroll indicator, matching the landing page.
+     `clip` rather than `hidden`: both stop sideways scrolling, but `hidden`
+     makes html/body a scroll container, which silently kills position:sticky
+     for every descendant — the top bar would just scroll away with the
+     content. `clip` has no scrollport, so the floating bar actually sticks. */
+  html, body { overflow-x: clip; scrollbar-width: none; -ms-overflow-style: none; }
   html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; width: 0; height: 0; }
   body { font-family: 'Inter', system-ui, sans-serif; background:#F7F5F2; }
   .dash-input:focus { border-color:#B11226; }
@@ -51,7 +54,7 @@
 
 <div class="min-h-screen flex bg-background">
   <!-- Sidebar - desktop only -->
-  <aside class="hidden lg:flex flex-col w-64 min-h-screen pt-0 fixed left-0 top-0 bottom-0 z-30" style="background: linear-gradient(180deg, #B11226 0%, #7a0d1a 100%);">
+  <aside class="shell-sidebar float-shadow-brand hidden lg:flex flex-col w-64 pt-0 fixed z-30" style="background: linear-gradient(180deg, #B11226 0%, #7a0d1a 100%);">
     <div class="px-6 py-4 border-b border-white/10">
       <div class="flex items-center gap-3">
         <?php if ($profilePhotoUrl): ?>
@@ -99,8 +102,8 @@
   </aside>
 
   <!-- Main Content -->
-  <div class="flex-1 lg:ml-64 flex flex-col min-h-screen">
-    <header class="sticky top-0 z-20 bg-white border-b border-gray-100" style="box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
+  <div class="shell-main flex-1 flex flex-col min-h-screen">
+    <header id="shellTopbar" class="shell-topbar float-glass float-shadow z-20">
       <div class="flex items-center justify-between px-4 sm:px-6 py-3">
         <div class="flex items-center gap-3">
           <div class="lg:hidden flex items-center gap-2">
@@ -625,7 +628,7 @@
     </main>
 
     <!-- Mobile Bottom Navigation -->
-    <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-100" style="box-shadow: 0 -2px 12px rgba(0,0,0,0.06); padding-bottom: env(safe-area-inset-bottom);">
+    <nav class="shell-mobilenav float-glass float-shadow lg:hidden fixed z-30">
       <div class="flex items-stretch">
         <button type="button" data-tab-link="dashboard" class="mobile-nav-btn flex-1 flex flex-col items-center justify-center py-2.5 gap-1 transition-all" data-tab="dashboard">
           <div class="mobile-nav-icon-wrap w-10 h-8 flex items-center justify-center rounded-xl transition-all" style="background:#FEE2E2;"><i data-lucide="home" class="w-4 h-4 transition-all" style="color:#B11226;"></i></div>
@@ -891,24 +894,6 @@ lucide.createIcons();
   qr.make();
   box.innerHTML = qr.createSvgTag(6, 0);
 })();
-
-// Scroll progress bar — fills with scroll depth, same behavior as the landing page
-var scrollProgressBar = document.getElementById('scrollProgressBar');
-var progressTicking = false;
-function updateScrollProgress() {
-  var scrollTop = window.scrollY || document.documentElement.scrollTop;
-  var docHeight = document.documentElement.scrollHeight - window.innerHeight;
-  var pct = docHeight > 0 ? Math.min(100, Math.max(0, (scrollTop / docHeight) * 100)) : 0;
-  scrollProgressBar.style.width = pct + '%';
-  progressTicking = false;
-}
-window.addEventListener('scroll', function () {
-  if (!progressTicking) {
-    requestAnimationFrame(updateScrollProgress);
-    progressTicking = true;
-  }
-}, { passive: true });
-updateScrollProgress();
 
 // Tab switching
 var titles = { dashboard: 'Student Dashboard', applications: 'My Applications', profile: 'My Profile' };

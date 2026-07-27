@@ -3,10 +3,11 @@
  * QEO KPI Tracker. Computes live progress against the Office of Culture and
  * Arts' 2026 Quality/Educational Organizations Objectives and Strategic/
  * Action Plans (BatStateU-QEO-OCA-03) for the metrics this system actually
- * has ground-truth data for (Stipend, PATHFit, BANTOG benefit grants, and
- * trainer engagements) — the QEO document's other objectives (equipment
- * procurement, customer satisfaction surveys, data-privacy incidents, etc.)
- * aren't tracked by ARTEMIS and are intentionally left out rather than
+ * has ground-truth data for (Stipend, PATHFit, BANTOG benefit grants,
+ * trainer engagements, and — since the Art. VII equipment/procurement
+ * module was added — equipment acquisition) — the QEO document's remaining
+ * objectives (customer satisfaction surveys, data-privacy incidents, etc.)
+ * still aren't tracked by ARTEMIS and are intentionally left out rather than
  * faked.
  *
  * "Projected year-end" is a simple pace-based linear projection: actual
@@ -39,6 +40,19 @@ function compute_qeo_kpis(PDO $pdo): array
             'citation' => 'QEO Obj. 3 (Annual) / Art. VIII Sec. 26',
             'target' => 30,
             'sql' => "SELECT COUNT(*) FROM benefit_records WHERE benefit_type = 'BANTOG Recognition' AND YEAR(granted_at) = :year",
+        ],
+        // Obj. 4 is already a percentage in the QEO document itself ("purchased
+        // equipment / required equipment x 100", target 100%), not a raw count —
+        // so unlike the other metrics here, this SQL computes the ratio directly
+        // and 'target' => 100 is a percentage, not a headcount. The generic
+        // pace/status logic below still applies unmodified: by day 182 of 365
+        // you'd be expected at ~50% delivered, same as any other metric.
+        'equipment' => [
+            'label' => 'Equipment & Materials Procurement Rate',
+            'citation' => 'QEO Obj. 4 (Annual) / Art. VII Sec. 20',
+            'target' => 100,
+            'sql' => "SELECT ROUND(100 * SUM(CASE WHEN status = 'Delivered' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0))
+                      FROM procurement_requests WHERE YEAR(requested_at) = :year",
         ],
         'trainers' => [
             'label' => 'Trainers / Resource Persons Engaged',

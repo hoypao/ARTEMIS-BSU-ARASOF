@@ -59,6 +59,7 @@ function dashboard_route_for_role(string $role): string
         'trainer' => 'trainer.dashboard',
         'pathfit_faculty' => 'pathfit-faculty.dashboard',
         'college_dean' => 'dean.dashboard',
+        'tao_central' => 'tao.dashboard',
         default => 'student.dashboard',
     };
 }
@@ -177,4 +178,43 @@ function get_user_approved_application_type_ids(PDO $pdo, int $userId): array
         $ids[(int) $typeId] = true;
     }
     return $ids;
+}
+
+// ---------------------------------------------------------------------
+// Upload content-type verification
+// ---------------------------------------------------------------------
+
+/**
+ * Real content-type check to back up the extension allow-list already
+ * enforced everywhere uploads happen (ApplicationController,
+ * StudentDashboardController, AdmissionAppealController) — an extension
+ * check alone lets an arbitrary file renamed to ".pdf" through. Fails open
+ * (returns true) only when the fileinfo extension itself isn't available,
+ * since that's an environment gap rather than a reason to block every
+ * upload — the extension allow-list has always already run before this.
+ */
+function upload_content_type_ok(string $tmpPath, string $ext): bool
+{
+    $allowed = [
+        'pdf' => ['application/pdf'],
+        'jpg' => ['image/jpeg'],
+        'jpeg' => ['image/jpeg'],
+        'png' => ['image/png'],
+        'webp' => ['image/webp'],
+        'mp4' => ['video/mp4'],
+        'mov' => ['video/quicktime'],
+    ];
+    if (!isset($allowed[$ext])) {
+        return false;
+    }
+    if (!function_exists('finfo_open')) {
+        return true;
+    }
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    if ($finfo === false) {
+        return true;
+    }
+    $detected = finfo_file($finfo, $tmpPath);
+    finfo_close($finfo);
+    return $detected !== false && in_array($detected, $allowed[$ext], true);
 }

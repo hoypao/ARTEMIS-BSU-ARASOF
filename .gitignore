@@ -27,3 +27,16 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Reference material dropped in the project root while building against it —
+# the Culture and Arts Development Manual and the BatStateU-WI-OCA-* Work
+# Instructions. The rules they define live in app/Support/; the source PDFs
+# themselves are large binaries and are not part of the application.
+/*.pdf
+/*.docx
+/CODE_REVIEW_AND_FEATURE_PROPOSAL.md
+/TRAINER_ROLE_BUILD_PROMPT.md
+
+# Local uploads (profile photos) — user data, same as documents above.
+/public/uploads/profile_photos/*
+!/public/uploads/profile_photos/.gitkeep

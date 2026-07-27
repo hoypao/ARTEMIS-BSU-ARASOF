@@ -12,6 +12,7 @@ use App\Http\Controllers\TrackController;
 use App\Http\Controllers\AdmissionAppealController;
 use App\Http\Controllers\DeanDashboardController;
 use App\Http\Controllers\PathfitFacultyDashboardController;
+use App\Http\Controllers\TaoDashboardController;
 use App\Http\Controllers\TrainerDashboardController;
 use Illuminate\Support\Facades\Route;
 
@@ -69,6 +70,15 @@ Route::middleware('role:admin,college_dean')->group(function () {
     Route::post('/faculty-complaints/update', [AdminOpsController::class, 'facultyComplaints'])->name('faculty-complaints.update');
 });
 
+// ---------------- TAO Central ----------------
+// Its own dashboard, not a mode of the admin one. The appeal action reuses
+// AdminOpsController::admissionAppeals(), which carries the role-scoping block
+// that limits this role to the Evaluation / For Approval stages.
+Route::middleware('role:tao_central')->group(function () {
+    Route::get('/tao/dashboard', [TaoDashboardController::class, 'index'])->name('tao.dashboard');
+    Route::post('/tao/admission-appeals', [AdminOpsController::class, 'admissionAppeals'])->name('tao.admission-appeals');
+});
+
 // ---------------- Admin ----------------
 Route::middleware('role:admin')->group(function () {
     Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
@@ -82,6 +92,10 @@ Route::middleware('role:admin')->group(function () {
     Route::post('/admin/honoraria', [AdminOpsController::class, 'honoraria'])->name('admin.honoraria');
     Route::post('/admin/bantog-evaluators', [AdminOpsController::class, 'bantogEvaluators'])->name('admin.bantog-evaluators');
     Route::post('/admin/partnerships', [AdminOpsController::class, 'partnerships'])->name('admin.partnerships');
+    Route::post('/admin/equipment', [AdminOpsController::class, 'equipmentItems'])->name('admin.equipment');
+    Route::post('/admin/procurement', [AdminOpsController::class, 'procurementRequests'])->name('admin.procurement');
+    Route::post('/admin/resource-sharing', [AdminOpsController::class, 'resourceShareRequests'])->name('admin.resource-sharing');
+    Route::post('/admin/loss-reports', [AdminOpsController::class, 'equipmentLossReports'])->name('admin.loss-reports');
     Route::post('/admin/admission-appeals', [AdminOpsController::class, 'admissionAppeals'])->name('admin.admission-appeals');
     Route::post('/admin/academic-support', [AdminOpsController::class, 'academicSupport'])->name('admin.academic-support');
     Route::post('/admin/settings', [AdminOpsController::class, 'settings'])->name('admin.settings.save');

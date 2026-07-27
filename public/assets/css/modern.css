@@ -30,9 +30,11 @@ a, button, input, textarea, select {
   border-radius: 8px;
 }
 
-/* Card hover-lift — opt-in via .modern-card, safe to add alongside existing classes */
+/* Card hover-lift — opt-in via .modern-card, safe to add alongside existing classes.
+   0.22s: a hover needs to answer the cursor immediately; at 0.35s the lift was
+   still travelling after the pointer had already moved on. */
 .modern-card {
-  transition: transform 0.35s var(--ease-out-soft), box-shadow 0.35s var(--ease-out-soft), border-color 0.35s var(--ease-out-soft);
+  transition: transform 0.22s var(--ease-out-soft), box-shadow 0.22s var(--ease-out-soft), border-color 0.22s var(--ease-out-soft);
 }
 .modern-card:hover {
   transform: translateY(-4px);
@@ -54,26 +56,192 @@ a, button, input, textarea, select {
   box-shadow: 0 0 0 3px rgba(177, 18, 38, 0.12);
 }
 
-/* Scroll-reveal — fade + rise, triggered once via IntersectionObserver in modern.js */
+/* Scroll-reveal — fade + rise, triggered once via IntersectionObserver in modern.js.
+   0.42s rather than 0.7s: long enough to read as motion, short enough that content
+   is legible almost immediately. */
 .reveal {
   opacity: 0;
-  transform: translateY(18px);
-  transition: opacity 0.7s var(--ease-out-soft), transform 0.7s var(--ease-out-soft);
+  transform: translateY(14px);
+  transition: opacity 0.42s var(--ease-out-soft), transform 0.42s var(--ease-out-soft);
+  /* promote to its own layer so the fade/rise is composited on the GPU and
+     doesn't repaint the card's shadow every frame */
+  will-change: opacity, transform;
 }
 .reveal.is-visible {
   opacity: 1;
   transform: translateY(0);
+  will-change: auto;   /* release the layer once the animation is done */
 }
-.reveal-1 { transition-delay: 0.06s; }
-.reveal-2 { transition-delay: 0.12s; }
-.reveal-3 { transition-delay: 0.18s; }
-.reveal-4 { transition-delay: 0.24s; }
-.reveal-5 { transition-delay: 0.30s; }
-.reveal-6 { transition-delay: 0.36s; }
+/* The .reveal-N classes used to stagger each item by up to 0.36s, which made a
+   grid of cards trickle in and read as lag. They are kept (markup still uses
+   them) but no longer hold anything back — everything in view animates at once. */
+.reveal-1, .reveal-2, .reveal-3,
+.reveal-4, .reveal-5, .reveal-6 { transition-delay: 0s; }
+
+/* Smooth anchor/section jumps — the dashboards scroll between sections a lot. */
+html { scroll-behavior: smooth; }
 
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
   .reveal, .modern-card, .modern-btn, .modern-input { transition: none !important; }
   .reveal { opacity: 1 !important; transform: none !important; }
+}
+
+/* ---- Floating dashboard shell -----------------------------------------------
+   Shared by all five role dashboards (admin, student, trainer, PATHFit faculty,
+   college dean). It lives here rather than in each page's <style> block so the
+   inset, radius and shadows are a one-place change instead of five.
+
+   Plain CSS on purpose: public/assets/css/tailwind.css is a pre-generated,
+   purged build containing only the utilities already used in the project. New
+   ones (ml-72, left-4, rounded-3xl, ...) are absent and silently no-op, and no
+   build step regenerates it.
+
+   Pages must also set `html, body { overflow-x: clip }` — NOT `hidden`. Both
+   stop sideways scrolling, but `hidden` makes html/body a scroll container,
+   which silently kills position:sticky for every descendant and lets the top
+   bar scroll away with the content. */
+:root {
+  --shell-gap: 1rem;          /* inset between a floating panel and the viewport */
+  --shell-sidebar-w: 16rem;
+}
+
+/* Flex items default to min-width:auto, so a wide child (a data table) can
+   stretch this column past the viewport and drag the floating bars out with it.
+   Pinning to 0 makes the column obey the viewport and lets wide content scroll
+   inside its own card. */
+.shell-main { min-width: 0; }
+
+/* Mobile-first, and the order matters: these rules have equal specificity, so
+   the wider breakpoint must come last or it loses the cascade. Side margins
+   track <main>'s p-4 / sm:p-6 / lg:p-8 so the bar lines up with the content
+   underneath it at every width. */
+.shell-topbar {
+  position: sticky;
+  top: var(--shell-gap);
+  margin-top: var(--shell-gap);
+  margin-left: 1rem;          /* = p-4 */
+  margin-right: 1rem;
+  border-radius: 1rem;
+}
+@media (min-width: 640px) {
+  .shell-topbar { margin-left: 1.5rem; margin-right: 1.5rem; }   /* = sm:p-6 */
+}
+
+/* Desktop only — below lg the sidebar is display:none and the mobile bar takes over. */
+@media (min-width: 1024px) {
+  .shell-sidebar {
+    left: var(--shell-gap);
+    top: var(--shell-gap);
+    bottom: var(--shell-gap);
+    border-radius: 1.5rem;
+    overflow: hidden;
+  }
+  .shell-main { margin-left: calc(var(--shell-sidebar-w) + (var(--shell-gap) * 2)); }
+  .shell-topbar { margin-left: 2rem; margin-right: 2rem; }       /* = lg:p-8 */
+}
+
+/* Scroll-aware top bar — the landing page's floating-nav behaviour ported onto
+   the dashboard shell. Past the fold the bar "lifts" (denser glass, gold edge,
+   deeper shadow) so it separates from the content sliding under it, and it
+   slides away on scroll-down to hand long tables the whole viewport, returning
+   the instant you scroll back up.
+
+   `.is-scrolled` / `.is-hidden` are set by assets/js/shell-scroll.js. Both
+   selectors are two classes deep on purpose: .float-glass and .float-shadow
+   supply the resting look, and a single class would lose to them. */
+.shell-topbar {
+  transition: transform 0.45s var(--ease-out-soft),
+              background 0.3s var(--ease-out-soft),
+              border-color 0.3s var(--ease-out-soft),
+              box-shadow 0.3s var(--ease-out-soft);
+}
+.shell-topbar.is-scrolled {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(212, 175, 55, 0.38);
+  box-shadow: 0 1px 2px rgba(26, 26, 46, 0.08),
+              0 10px 30px -8px rgba(26, 26, 46, 0.22),
+              0 28px 56px -28px rgba(122, 13, 26, 0.28);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .shell-topbar.is-scrolled { background: rgba(255, 255, 255, 0.99); }
+}
+
+/* Its own height plus the gap it floats below, or the bottom edge would stay
+   peeking at the top of the viewport. */
+.shell-topbar.is-hidden {
+  transform: translateY(calc(-100% - var(--shell-gap) - 0.5rem));
+}
+
+/* The tint is static enough to keep, but a bar that slides out from under the
+   pointer is exactly the motion "reduce" is asking us to drop. shell-scroll.js
+   also skips the hide entirely — this is the belt to that pair of braces. */
+@media (prefers-reduced-motion: reduce) {
+  .shell-topbar { transition: none; }
+  .shell-topbar.is-hidden { transform: none; }
+}
+
+/* Scroll-depth indicator, driven by assets/js/shell-scroll.js. 6px to match the
+   landing page — at 3px it read as a stray hairline rather than a deliberate
+   gauge. z-index stays under the dashboards' modals (z-60 / z-100) so it never
+   draws a red line across an open dialog.
+
+   Public pages (home, events, track) redefine this in their own <style>, which
+   lands after this file and wins; their z-index differs on purpose. */
+#scrollProgressBar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 6px;
+  width: 0%;
+  z-index: 50;
+  background: #B11226;
+  transition: width 0.1s linear;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  #scrollProgressBar { transition: none; }
+}
+
+.shell-mobilenav {
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+/* Only dashboards that actually have a floating bottom bar need clearance for
+   it — :has() scopes this so the dean and PATHFit pages (no mobile nav) don't
+   get dead space under their content. */
+@media (max-width: 1023px) {
+  .shell-main:has(> .shell-mobilenav) > main { padding-bottom: 7rem; }
+}
+
+.float-shadow {
+  box-shadow: 0 1px 2px rgba(26, 26, 46, 0.06),
+              0 8px 24px -8px rgba(26, 26, 46, 0.16),
+              0 24px 48px -24px rgba(26, 26, 46, 0.20);
+}
+/* Crimson-tinted so the sidebar's shadow reads as its own colour, not grey. */
+.float-shadow-brand {
+  box-shadow: 0 1px 2px rgba(122, 13, 26, 0.22),
+              0 12px 32px -8px rgba(122, 13, 26, 0.34),
+              0 32px 64px -32px rgba(122, 13, 26, 0.45);
+}
+
+/* Frosted bar — the translucency is what sells the float: content scrolling
+   underneath stays faintly visible through it. */
+.float-glass {
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+}
+/* Firefox <103 and older Safari have no backdrop-filter — fall back to a
+   near-opaque panel so text never lands on unreadable see-through white. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .float-glass { background: rgba(255, 255, 255, 0.97); }
 }
 
 /* Soft ambient blob — reusable decorative background accent */

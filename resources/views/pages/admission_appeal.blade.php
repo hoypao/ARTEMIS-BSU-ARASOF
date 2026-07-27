@@ -83,6 +83,16 @@
         <textarea id="achievements_summary" name="achievements_summary" rows="3" required placeholder="Competitions joined, awards/distinctions received, membership in your school's culture and arts organization..." class="modern-input w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none"></textarea>
       </div>
       <div>
+        <label for="discipline" class="text-xs font-medium text-gray-600 block mb-1">Discipline (Sec. 12)</label>
+        <select id="discipline" name="discipline" required class="modern-input w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+          <option value="" disabled selected>Select the field that matches your achievements above</option>
+          <?php foreach (ARTEMIS_APPEAL_DISCIPLINES as $d): ?>
+            <option value="<?= e($d) ?>"><?= e($d) ?></option>
+          <?php endforeach; ?>
+        </select>
+        <p class="text-[11px] text-gray-400 mt-1">Choose whichever field matches what you described above — e.g. select Dance if your achievements are in dance.</p>
+      </div>
+      <div>
         <label for="academic_standing_note" class="text-xs font-medium text-gray-600 block mb-1">Academic Standing <span class="text-gray-400">(optional)</span></label>
         <textarea id="academic_standing_note" name="academic_standing_note" rows="2" placeholder="e.g. general average, class rank, any relevant notes on your secondary school academic record" class="modern-input w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none"></textarea>
       </div>
@@ -91,15 +101,33 @@
         <p class="text-xs font-semibold" style="color:#1a1a2e;">Required Documents (Sec. 11-B)</p>
         <div>
           <label for="certificates" class="text-xs text-gray-600 block mb-1">Certificates, medals, or awards from competitions</label>
-          <input type="file" id="certificates" name="certificates" accept=".pdf,.jpg,.jpeg,.png" required class="text-xs text-gray-500 w-full">
+          <div class="flex items-center gap-3 flex-wrap">
+            <label for="certificates" id="certificates-btn" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer flex-shrink-0">
+              <i data-lucide="upload" class="w-3.5 h-3.5"></i> Choose File
+            </label>
+            <span id="certificates-name" class="text-xs text-gray-400">No file chosen</span>
+          </div>
+          <input type="file" id="certificates" name="certificates" accept=".pdf,.jpg,.jpeg,.png" required class="hidden">
         </div>
         <div>
           <label for="recommendation_letter" class="text-xs text-gray-600 block mb-1">Letter of recommendation from a trainer</label>
-          <input type="file" id="recommendation_letter" name="recommendation_letter" accept=".pdf,.jpg,.jpeg,.png" required class="text-xs text-gray-500 w-full">
+          <div class="flex items-center gap-3 flex-wrap">
+            <label for="recommendation_letter" id="recommendation_letter-btn" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer flex-shrink-0">
+              <i data-lucide="upload" class="w-3.5 h-3.5"></i> Choose File
+            </label>
+            <span id="recommendation_letter-name" class="text-xs text-gray-400">No file chosen</span>
+          </div>
+          <input type="file" id="recommendation_letter" name="recommendation_letter" accept=".pdf,.jpg,.jpeg,.png" required class="hidden">
         </div>
         <div>
           <label for="school_statement" class="text-xs text-gray-600 block mb-1">Statement from your secondary school's culture and arts department</label>
-          <input type="file" id="school_statement" name="school_statement" accept=".pdf,.jpg,.jpeg,.png" required class="text-xs text-gray-500 w-full">
+          <div class="flex items-center gap-3 flex-wrap">
+            <label for="school_statement" id="school_statement-btn" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer flex-shrink-0">
+              <i data-lucide="upload" class="w-3.5 h-3.5"></i> Choose File
+            </label>
+            <span id="school_statement-name" class="text-xs text-gray-400">No file chosen</span>
+          </div>
+          <input type="file" id="school_statement" name="school_statement" accept=".pdf,.jpg,.jpeg,.png" required class="hidden">
         </div>
         <p class="text-[11px] text-gray-400">PDF or image (jpg, png), max 10MB each.</p>
       </div>
@@ -115,6 +143,18 @@
 
 <script>
 lucide.createIcons();
+['certificates', 'recommendation_letter', 'school_statement'].forEach(function (id) {
+  var input = document.getElementById(id);
+  var nameEl = document.getElementById(id + '-name');
+  var btn = document.getElementById(id + '-btn');
+  if (!input) return;
+  input.addEventListener('change', function () {
+    var file = input.files && input.files[0];
+    nameEl.textContent = file ? file.name : 'No file chosen';
+    nameEl.style.color = file ? '#15803D' : '';
+    if (btn) { btn.style.borderColor = file ? '#15803D' : ''; btn.style.color = file ? '#15803D' : ''; }
+  });
+});
 </script>
 </body>
 </html>

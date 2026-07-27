@@ -15,8 +15,8 @@
  * fast action doesn't get dragged out by a lingering animation.
  */
 ?>
-<div id="pageLoadingScreen" style="position:fixed; inset:0; z-index:9999; background:#ffffff; display:flex; align-items:center; justify-content:center; transition:opacity 0.3s ease;">
-  <img src="<?= e(APP_URL) ?>/assets/images/batstateu-redspartan.png" alt="Loading ARTEMIS" class="loading-shield" style="width:140px; height:auto; animation: loading-pulse 1.8s ease-in-out infinite; transition: transform 0.3s ease, opacity 0.3s ease;">
+<div id="pageLoadingScreen" style="position:fixed; inset:0; z-index:9999; background:#ffffff; display:flex; align-items:center; justify-content:center; transition:opacity 0.18s cubic-bezier(0.16,1,0.3,1);">
+  <img src="<?= e(APP_URL) ?>/assets/images/batstateu-redspartan.png" alt="Loading ARTEMIS" class="loading-shield" style="width:140px; height:auto; animation: loading-pulse 1.8s ease-in-out infinite; transition: transform 0.18s cubic-bezier(0.16,1,0.3,1), opacity 0.18s cubic-bezier(0.16,1,0.3,1);">
 </div>
 <style>
   @keyframes loading-pulse { 0%, 100% { transform:scale(1); } 50% { transform:scale(1.04); } }
@@ -27,27 +27,19 @@
 (function () {
   var screen = document.getElementById('pageLoadingScreen');
   if (!screen) return;
-  var FAST_THRESHOLD_MS = 300;  // real loads under this feel instant — skip the lingering minimum
-  var MIN_VISIBLE_MS = 900;     // genuinely slower loads stay up at least this long
-  var startedAt = Date.now();
   var hidden = false;
-  function finalizeHide() {
-    screen.classList.add('is-hidden');
-    setTimeout(function () { if (screen && screen.parentNode) screen.parentNode.removeChild(screen); }, 300);
-  }
   function hideLoadingScreen() {
     if (hidden) return;
     hidden = true;
-    var elapsed = Date.now() - startedAt;
-    if (elapsed < FAST_THRESHOLD_MS) {
-      finalizeHide();
-    } else {
-      var remaining = MIN_VISIBLE_MS - elapsed;
-      if (remaining > 0) setTimeout(finalizeHide, remaining);
-      else finalizeHide();
-    }
+    // Hide the moment loading actually finishes — there is deliberately no
+    // artificial minimum hold. This used to keep the overlay up for a full
+    // 900ms on anything slower than 300ms, which made every navigation feel
+    // laggy even when the page was already painted and ready.
+    screen.classList.add('is-hidden');
+    setTimeout(function () { if (screen && screen.parentNode) screen.parentNode.removeChild(screen); }, 180);
   }
   window.addEventListener('load', hideLoadingScreen);
+  // Safety cap if a slow third-party resource stalls window.load.
   setTimeout(hideLoadingScreen, 5000);
 })();
 </script>

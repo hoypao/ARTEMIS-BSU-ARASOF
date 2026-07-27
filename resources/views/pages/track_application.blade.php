@@ -59,14 +59,14 @@
   <div class="tk-card bg-white rounded-2xl border border-gray-100 p-6 sm:p-7 relative z-10" style="box-shadow: 0 12px 32px rgba(0,0,0,0.1);">
     <form id="trackForm" class="flex flex-col gap-4">
       <div class="relative">
-        <label for="appCodeInput" class="sr-only">Application ID</label>
+        <label for="appCodeInput" class="sr-only">Application ID or Admission Appeal reference</label>
         <i data-lucide="file-text" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
-        <input id="appCodeInput" placeholder="e.g. APP-2026-001" class="track-input modern-input font-mono w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none transition-colors">
+        <input id="appCodeInput" placeholder="e.g. APP-2026-001 or APPEAL-00001" class="track-input modern-input font-mono w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none transition-colors">
       </div>
       <div class="relative">
-        <label for="studentIdInput" class="sr-only">Student ID number</label>
+        <label for="studentIdInput" class="sr-only">Student ID number, or email for admission appeals</label>
         <i data-lucide="user" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
-        <input id="studentIdInput" placeholder="Student ID Number, e.g. 21-10234" class="track-input modern-input font-mono w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none transition-colors">
+        <input id="studentIdInput" placeholder="Student ID Number, or email if tracking an appeal" class="track-input modern-input font-mono w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none transition-colors">
       </div>
       <button type="submit" id="trackSubmitBtn" disabled
         class="modern-btn w-full py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-opacity flex items-center justify-center"
@@ -75,7 +75,7 @@
       </button>
     </form>
 
-    <p class="text-center text-xs text-gray-400 mt-4">Your Application ID and Student ID Number were provided when you submitted your application to OCA.</p>
+    <p class="text-center text-xs text-gray-400 mt-4">Your Application ID and Student ID Number (or, for admission appeals, your Appeal Reference and email) were provided when you submitted to OCA.</p>
   </div>
 
   <div id="resultArea" class="mt-6 hidden flex-col gap-4"></div>
@@ -92,11 +92,11 @@
     <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div class="modern-card bg-white rounded-2xl border border-gray-100 p-4 flex items-start gap-3" style="box-shadow: 0 1px 8px rgba(0,0,0,0.05);">
         <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#FEE2E2;"><i data-lucide="file-text" class="w-4 h-4" style="color:#B11226;"></i></div>
-        <div><div class="text-xs font-semibold mb-0.5" style="color:#1a1a2e;">Application ID</div><div class="text-[11px] text-gray-500 leading-relaxed">The code sent to you when you first submitted, e.g. <span class="font-mono">APP-2026-001</span>.</div></div>
+        <div><div class="text-xs font-semibold mb-0.5" style="color:#1a1a2e;">Application ID or Appeal Reference</div><div class="text-[11px] text-gray-500 leading-relaxed">The code sent to you when you first submitted, e.g. <span class="font-mono">APP-2026-001</span> or <span class="font-mono">APPEAL-00001</span>.</div></div>
       </div>
       <div class="modern-card bg-white rounded-2xl border border-gray-100 p-4 flex items-start gap-3" style="box-shadow: 0 1px 8px rgba(0,0,0,0.05);">
         <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#FEF9E7;"><i data-lucide="user" class="w-4 h-4" style="color:#D4AF37;"></i></div>
-        <div><div class="text-xs font-semibold mb-0.5" style="color:#1a1a2e;">Student ID Number</div><div class="text-[11px] text-gray-500 leading-relaxed">Your official BatStateU ID number, e.g. <span class="font-mono">21-10234</span>.</div></div>
+        <div><div class="text-xs font-semibold mb-0.5" style="color:#1a1a2e;">Student ID Number</div><div class="text-[11px] text-gray-500 leading-relaxed">Your official BatStateU ID number, e.g. <span class="font-mono">21-10234</span>. Tracking an admission appeal instead? Enter the email you applied with.</div></div>
       </div>
     </div>
   </div>
@@ -123,6 +123,62 @@ var STATUS_MESSAGES = {
   Approved: 'Congratulations! Your application has been approved by the Chancellor. Visit the OCA Office for the next steps.',
   Rejected: 'Your application was not approved. Please review the remarks above and contact the OCA Office if you have questions.',
 };
+
+// Admission Appeal (Art. IV Sec. 11) status vocabulary — separate from the
+// applications table's Pending/Under Review/Evaluation/Approved/Rejected above,
+// since appeals track through their own five stages instead: Submitted ->
+// Under Review (OCA) -> Evaluation Stage -> For Approval (President via TAO)
+// -> Approved/Rejected. The lookup endpoint passes the stored status straight
+// through, so these keys must match ARTEMIS_APPEAL_CHAIN exactly.
+var APPEAL_STATUS_META = {
+  Submitted:                           { color: '#6B7280', bg: '#F3F4F6', icon: 'clock',        label: 'Submitted' },
+  'Under Review (OCA)':                { color: '#92400E', bg: '#FEF9C3', icon: 'file-text',    label: 'Under Review (OCA)' },
+  'Evaluation Stage':                  { color: '#7C3AED', bg: '#F3E8FF', icon: 'clipboard-check', label: 'Evaluation Stage' },
+  'For Approval (President via TAO)':  { color: '#1D4ED8', bg: '#DBEAFE', icon: 'search',       label: 'For Approval (President via TAO)' },
+  Approved:                            { color: '#15803D', bg: '#DCFCE7', icon: 'check-circle', label: 'Approved' },
+  Rejected:                            { color: '#B91C1C', bg: '#FEE2E2', icon: 'x-circle',     label: 'Rejected' },
+};
+var APPEAL_STATUS_MESSAGES = {
+  Submitted: 'Your appeal has been received. OCA will begin screening it against Art. IV Sec. 11 shortly.',
+  'Under Review (OCA)': 'OCA is reviewing your submitted achievements and documents.',
+  'Evaluation Stage': 'Your appeal has passed OCA screening and is being evaluated by the Testing and Admission Office — Central Administration.',
+  'For Approval (President via TAO)': 'Your appeal has been endorsed through TAO Central for final approval by the University President.',
+  Approved: 'Congratulations! Your admission appeal has been approved. The OCA Office will reach out with next steps.',
+  Rejected: 'Your admission appeal was not approved. Please review the remarks below and contact the OCA Office if you have questions.',
+};
+
+function renderAppealResult(data) {
+  var meta = APPEAL_STATUS_META[data.status] || APPEAL_STATUS_META.Submitted;
+  var html = '<div class="modern-card bg-white rounded-2xl border border-gray-100 overflow-hidden" style="box-shadow:0 1px 8px rgba(0,0,0,0.06);">'
+    + '<div class="h-1.5 w-full" style="background:' + meta.color + ';"></div>'
+    + '<div class="p-5"><div class="flex items-start justify-between mb-2">'
+    + '<div><div class="text-xs text-gray-400 mb-0.5 font-mono">' + data.reference + '</div><h2 class="font-bold text-base" style="color:#1a1a2e;">' + data.full_name + '</h2><div class="text-xs text-gray-500 mt-0.5">Admission Appeal &middot; ' + data.discipline + '</div></div>'
+    + '<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold flex-shrink-0" style="background:' + meta.bg + ';color:' + meta.color + ';"><i data-lucide="' + meta.icon + '" class="w-3.5 h-3.5"></i>' + meta.label + '</div></div></div></div>';
+
+  var fields = [
+    ['user', 'Applicant', data.full_name],
+    ['book-open', 'Secondary School', data.secondary_school],
+    ['map-pin', 'Campus', data.campus],
+    ['calendar', 'Date Submitted', data.submitted_at],
+  ];
+  html += '<div class="modern-card bg-white rounded-2xl border border-gray-100 p-5" style="box-shadow:0 1px 8px rgba(0,0,0,0.06);">'
+    + '<h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Appeal Details</h3><div class="grid grid-cols-2 gap-3">'
+    + fields.map(function (f) {
+      return '<div class="bg-gray-50 rounded-xl p-3"><div class="flex items-center gap-1.5 mb-1"><i data-lucide="' + f[0] + '" class="w-3 h-3 text-gray-400"></i><span class="text-[10px] text-gray-400 uppercase tracking-wide">' + f[1] + '</span></div><div class="text-xs font-semibold truncate" style="color:#1a1a2e;">' + (f[2] || '') + '</div></div>';
+    }).join('') + '</div></div>';
+
+  if (data.remarks) {
+    html += '<div class="modern-card bg-yellow-50 rounded-2xl p-4 border border-yellow-100"><div class="flex items-center gap-2 mb-2"><i data-lucide="message-square" class="w-4 h-4" style="color:#92400E;"></i><span class="text-xs font-semibold" style="color:#92400E;">OCA Remarks</span></div><p class="text-xs text-yellow-800 leading-relaxed">' + data.remarks + '</p></div>';
+  }
+
+  html += '<div class="rounded-2xl p-4 border" style="background:' + meta.bg + '80;border-color:' + meta.color + '30;"><p class="text-xs leading-relaxed" style="color:' + meta.color + ';">' + (APPEAL_STATUS_MESSAGES[data.status] || '') + '</p></div>';
+
+  html += '<div class="flex flex-col sm:flex-row gap-2 pb-4">'
+    + '<a href="' + APP_URL + '/login" class="modern-btn flex-1 py-3 rounded-xl text-sm font-semibold text-white text-center hover:opacity-90 transition-opacity" style="background: linear-gradient(135deg, #B11226, #7a0d1a);">Sign In for Full Access</a>'
+    + '<button type="button" id="trackAnotherBtn" class="modern-btn flex-1 py-3 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 bg-white hover:bg-gray-50 transition-colors">Track Another</button></div>';
+
+  return html;
+}
 
 lucide.createIcons();
 
@@ -194,8 +250,8 @@ function progressTrackerHtml(stage, status, typeCode) {
 function renderNotFound(code) {
   return '<div class="modern-card bg-white rounded-2xl p-8 text-center border border-gray-100" style="box-shadow:0 1px 8px rgba(0,0,0,0.06);">'
     + '<div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style="background:#FEE2E2;"><i data-lucide="x-circle" class="w-6 h-6" style="color:#B11226;"></i></div>'
-    + '<h3 class="font-bold text-sm mb-1" style="color:#1a1a2e;">Application Not Found</h3>'
-    + '<p class="text-xs text-gray-500 leading-relaxed max-w-xs mx-auto">No application found matching <span class="font-mono font-semibold">' + code + '</span> and that student ID. Double-check your details or contact the OCA Office.</p></div>';
+    + '<h3 class="font-bold text-sm mb-1" style="color:#1a1a2e;">Not Found</h3>'
+    + '<p class="text-xs text-gray-500 leading-relaxed max-w-xs mx-auto">No match found for <span class="font-mono font-semibold">' + code + '</span> and that ID/email. Double-check your details or contact the OCA Office.</p></div>';
 }
 
 function renderResult(data) {
@@ -255,7 +311,7 @@ document.getElementById('trackForm').addEventListener('submit', function (e) {
       var resultArea = document.getElementById('resultArea');
       document.getElementById('hintArea').classList.add('hidden');
       resultArea.classList.remove('hidden'); resultArea.classList.add('flex');
-      resultArea.innerHTML = res.ok ? renderResult(res.data) : renderNotFound(code);
+      resultArea.innerHTML = res.ok ? (res.data.kind === 'appeal' ? renderAppealResult(res.data) : renderResult(res.data)) : renderNotFound(code);
       lucide.createIcons();
       var again = document.getElementById('trackAnotherBtn');
       if (again) again.addEventListener('click', function () {

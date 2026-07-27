@@ -12,10 +12,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/modern.css">
+<script src="<?= APP_URL ?>/assets/js/shell-scroll.js" defer></script>
 <style>
-  #scrollProgressBar { position: fixed; top: 0; left: 0; height: 3px; width: 0%; z-index: 50; background: #B11226; transition: width 0.1s linear; pointer-events: none; }
-  @media (prefers-reduced-motion: reduce) { #scrollProgressBar { transition: none; } }
-  html, body { overflow-x: hidden; scrollbar-width: none; -ms-overflow-style: none; }
+  /* `clip` rather than `hidden`: both stop sideways scrolling, but `hidden`
+     makes html/body a scroll container, which silently kills position:sticky
+     for every descendant — the top bar just scrolls away with the content.
+     `clip` has no scrollport, so the floating bar actually sticks. */
+  html, body { overflow-x: clip; scrollbar-width: none; -ms-overflow-style: none; }
   html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; width: 0; height: 0; }
   body { font-family: 'Inter', system-ui, sans-serif; background:#F7F5F2; }
   .dash-input:focus { border-color:#B11226; }
@@ -27,7 +30,7 @@
 
 <div class="min-h-screen flex bg-background">
   <!-- Sidebar - desktop only -->
-  <aside class="hidden lg:flex flex-col w-64 min-h-screen pt-0 fixed left-0 top-0 bottom-0 z-30" style="background: linear-gradient(180deg, #B11226 0%, #7a0d1a 100%);">
+  <aside class="shell-sidebar float-shadow-brand hidden lg:flex flex-col w-64 pt-0 fixed z-30" style="background: linear-gradient(180deg, #B11226 0%, #7a0d1a 100%);">
     <div class="px-6 py-4 border-b border-white/10">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white font-bold text-sm flex-shrink-0"><?= e($initials) ?></div>
@@ -56,8 +59,8 @@
   </aside>
 
   <!-- Main Content -->
-  <div class="flex-1 lg:ml-64 flex flex-col min-h-screen">
-    <header class="sticky top-0 z-20 bg-white border-b border-gray-100" style="box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
+  <div class="shell-main flex-1 flex flex-col min-h-screen">
+    <header id="shellTopbar" class="shell-topbar float-glass float-shadow z-20">
       <div class="flex items-center justify-between px-4 sm:px-6 py-3">
         <div class="flex items-center gap-3">
           <div class="lg:hidden flex items-center gap-2">
@@ -171,21 +174,6 @@
   var APP_URL = <?= json_encode(APP_URL) ?>;
 
   lucide.createIcons();
-  (function () {
-    var bar = document.getElementById('scrollProgressBar');
-    var ticking = false;
-    function update() {
-      var doc = document.documentElement;
-      var scrollTop = doc.scrollTop || document.body.scrollTop;
-      var height = (doc.scrollHeight - doc.clientHeight) || 1;
-      bar.style.width = Math.min(100, (scrollTop / height) * 100) + '%';
-      ticking = false;
-    }
-    window.addEventListener('scroll', function () {
-      if (!ticking) { window.requestAnimationFrame(update); ticking = true; }
-    });
-    update();
-  })();
 
   function showFlash(message, type) {
     var el = document.getElementById('jsFlash');

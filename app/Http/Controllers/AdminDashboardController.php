@@ -85,8 +85,29 @@ class AdminDashboardController extends Controller
         // Collaboration with Culture and Arts Agencies and Organizations (Art. XIII).
         $partnerOrganizations = $pdo->query('SELECT * FROM partner_organizations ORDER BY updated_at DESC')->fetchAll();
 
+        // Equipment & Materials Inventory / Procurement (Art. VII; Property Custodian duties, Art. III Sec. 6.C).
+        $equipmentItems = $pdo->query('SELECT * FROM equipment_items ORDER BY updated_at DESC')->fetchAll();
+        $procurementRequests = $pdo->query('SELECT * FROM procurement_requests ORDER BY updated_at DESC')->fetchAll();
+        $equipmentConditionCounts = summarize_equipment_conditions($equipmentItems);
+
+        // Phase 2: cross-campus resource sharing + RLSDDP loss/damage reports (Art. VII Sec. 20-C), both need the item name for display.
+        $resourceShareRequests = $pdo->query(
+            "SELECT s.*, e.item_name FROM resource_share_requests s JOIN equipment_items e ON e.equipment_id = s.equipment_id ORDER BY s.updated_at DESC"
+        )->fetchAll();
+        $equipmentLossReports = $pdo->query(
+            "SELECT r.*, e.item_name FROM equipment_loss_reports r JOIN equipment_items e ON e.equipment_id = r.equipment_id ORDER BY r.updated_at DESC"
+        )->fetchAll();
+
         // Admission Appeals for prospective students (Art. IV Sec. 11).
         $admissionAppeals = $pdo->query('SELECT * FROM admission_appeals ORDER BY submitted_at DESC')->fetchAll();
+
+        // The appeal card is rendered client-side, so the shared PHP tracker is
+        // pre-rendered once per stage and handed to JS as a lookup rather than
+        // reimplemented there — one component, one set of markup.
+        $appealTrackerHtml = [];
+        foreach (range(1, count(ARTEMIS_APPEAL_CHAIN) + 1) as $stage) {
+            $appealTrackerHtml[$stage] = admin_progress_tracker_html($stage, 'appeal_admission');
+        }
 
         // Academic Support: students on probation + active mentorships (Art. V Sec. 15).
         $probationStudents = $pdo->query(

@@ -7,7 +7,7 @@ ARTEMIS digitizes the OCA's application, evaluation, and monitoring workflows fo
 student-artists under RPAG (Recognized Performing Arts Group) — from admission
 appeal through audition, stipend, PATHFit exemption, BANTOG recognition, event
 attendance, and faculty-compliance escalation — across five account types:
-Student, OCA Admin, Trainer/Coach, PATHFit Faculty, and College Dean.
+Student, OCA Admin, Trainer/Coach, PATHFit Faculty, College Dean, and TAO Central.
 
 It began as a **Laravel 13** port of an earlier plain-PHP prototype (routing,
 controllers, middleware, and Blade views now follow the Laravel MVC structure),
@@ -64,6 +64,13 @@ documents.
 - Review First Violation faculty non-compliance complaints filed within their
   own college and issue the written-warning step (Repeated Violations
   auto-escalate to a Grievance Board outside the Dean's authority)
+
+**TAO Central**
+- Review admission appeals that have cleared OCA screening — the back half of
+  the Art. IV Sec. 11-C chain (Evaluation Stage and For Approval (President via
+  TAO)) — from a dedicated dashboard at `/tao/dashboard` that carries only
+  those appeals and no other office's data. Screening before that window stays
+  with OCA, and a decided appeal can't be reopened
 
 ## Tech Stack
 
@@ -130,6 +137,7 @@ Demo accounts (same database as the legacy system):
 | Trainer         | jerico.mendoza@batstate-u.edu.ph    | trainer123  |
 | PATHFit Faculty | andrea.bautista@batstate-u.edu.ph   | pathfit123  |
 | College Dean    | corazon.ibarra@batstate-u.edu.ph    | dean123     |
+| TAO Central     | tao.central@batstate-u.edu.ph       | tao123      |
 
 *(Note: the login page's "Student Demo" quick-fill button still inserts the
 original seed email `juan.delacruz@g.batstate-u.edu.ph`; that account's email
@@ -164,6 +172,7 @@ original prototype):
 - `/trainer/dashboard` — Trainer/Coach dashboard
 - `/pathfit-faculty/dashboard` — PATHFit Faculty dashboard
 - `/dean/dashboard` — College Dean dashboard
+- `/tao/dashboard` — TAO Central admission-appeal review (`TaoDashboardController`)
 - `/admin/events/checkin` — QR check-in scan endpoint
 - `/trainer/audition/rate` — Audition Rating submission
 

@@ -79,20 +79,21 @@ class AuthController extends Controller
         login_attempts_clear($pdo, $email);
         login_user($userRow);
 
+        $cookieOptions = ['path' => '/', 'secure' => $request->secure(), 'httponly' => true, 'samesite' => 'Lax'];
         if ($remember) {
-            setcookie('artemis_remembered_email', $email, time() + 60 * 60 * 24 * 30, '/');
+            setcookie('artemis_remembered_email', $email, ['expires' => time() + 60 * 60 * 24 * 30] + $cookieOptions);
         } else {
-            setcookie('artemis_remembered_email', '', time() - 3600, '/');
+            setcookie('artemis_remembered_email', '', ['expires' => time() - 3600] + $cookieOptions);
         }
 
         if (mail_is_configured()) {
             $when = date('F j, Y \a\t g:i A');
             $ip = client_ip();
-            $body = "<p>Hi {$userRow['first_name']},</p>"
+            $body = "<p>Hi " . e($userRow['first_name']) . ",</p>"
                 . "<p>We noticed a new sign-in to your ARTEMIS account.</p>"
                 . "<table style=\"font-size:13px; color:#374151; margin: 12px 0;\">"
                 . "<tr><td style=\"padding:2px 12px 2px 0; color:#9CA3AF;\">Time</td><td>{$when}</td></tr>"
-                . "<tr><td style=\"padding:2px 12px 2px 0; color:#9CA3AF;\">IP address</td><td>{$ip}</td></tr>"
+                . "<tr><td style=\"padding:2px 12px 2px 0; color:#9CA3AF;\">IP address</td><td>" . e($ip) . "</td></tr>"
                 . "</table>"
                 . "<p>If this was you, no action is needed. If you don't recognize this sign-in, reset your password immediately from the login page.</p>";
             send_email(
@@ -158,7 +159,7 @@ class AuthController extends Controller
         $stmt->execute(['uid' => $user['user_id'], 'hash' => $tokenHash]);
 
         $resetLink = APP_URL . '/reset-password?token=' . $token;
-        $body = "<p>Hi {$user['first_name']},</p>"
+        $body = "<p>Hi " . e($user['first_name']) . ",</p>"
             . "<p>We received a request to reset the password for your ARTEMIS account. This link expires in 30 minutes and can only be used once.</p>"
             . "<p style=\"text-align:center; margin: 24px 0;\">"
             . "<a href=\"{$resetLink}\" style=\"display:inline-block; background:#B11226; color:#fff; text-decoration:none; padding:12px 28px; border-radius:10px; font-weight:600; font-size:14px;\">Reset My Password</a>"

@@ -23,10 +23,20 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
+        <!-- ARTEMIS talks to MySQL through raw PDO (getDB()) and its schema
+             migration is verbatim MySQL DDL (ENGINE=InnoDB, ENUM, ...), so the
+             default sqlite/:memory: setup can never build it. Tests run
+             read-only against the normal dev database instead. -->
+        <env name="DB_CONNECTION" value="mysql"/>
+        <env name="DB_DATABASE" value="artemis_db"/>
         <env name="DB_URL" value=""/>
+        <!-- Never send real mail from a test run: .env points at live Gmail SMTP. -->
         <env name="MAIL_MAILER" value="array"/>
+        <env name="MAIL_USERNAME" value=""/>
+        <env name="MAIL_PASSWORD" value=""/>
+        <!-- Blank keys disable the "I'm not a robot" gate so login can be tested. -->
+        <env name="RECAPTCHA_SITE_KEY" value=""/>
+        <env name="RECAPTCHA_SECRET_KEY" value=""/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>

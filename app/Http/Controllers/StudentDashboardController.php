@@ -185,6 +185,10 @@ class StudentDashboardController extends Controller
             flash_set('error', 'Photo must be a JPG, PNG, or WEBP image.');
             return $back;
         }
+        if (!upload_content_type_ok($_FILES['photo']['tmp_name'], $ext)) {
+            flash_set('error', 'That file does not look like a valid image.');
+            return $back;
+        }
 
         $pdo = getDB();
         $stmt = $pdo->prepare('SELECT profile_id, photo_path FROM performer_profiles WHERE user_id = :uid');
@@ -264,6 +268,10 @@ class StudentDashboardController extends Controller
             $ext = strtolower(pathinfo($_FILES['completion_file']['name'], PATHINFO_EXTENSION));
             if (!in_array($ext, ['pdf', 'jpg', 'jpeg', 'png', 'mp4', 'mov'], true)) {
                 flash_set('error', 'Attachment must be a PDF, image (jpg, png), or video (mp4, mov).');
+                return $back;
+            }
+            if (!upload_content_type_ok($_FILES['completion_file']['tmp_name'], $ext)) {
+                flash_set('error', 'That attachment does not look like a valid PDF, image, or video file.');
                 return $back;
             }
             $destDir = ARTEMIS_UPLOAD_PATH . '/' . $user['user_id'] . '/benefit-reports';

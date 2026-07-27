@@ -78,6 +78,10 @@ class ApplicationController extends Controller
                 flash_set('error', "{$label} must be a PDF or image (jpg, png).");
                 return redirect()->route('student.dashboard');
             }
+            if (!upload_content_type_ok($_FILES[$field]['tmp_name'], $ext)) {
+                flash_set('error', "{$label} does not look like a valid PDF or image file.");
+                return redirect()->route('student.dashboard');
+            }
             $uploadedFiles[] = [
                 'tmp_name' => $_FILES[$field]['tmp_name'],
                 'original' => $originalName,
@@ -112,6 +116,10 @@ class ApplicationController extends Controller
                     flash_set('error', 'Only PDF or image (jpg, png) documents are allowed.');
                     return redirect()->route('student.dashboard');
                 }
+                if (!upload_content_type_ok($_FILES['documents']['tmp_name'][$i], $ext)) {
+                    flash_set('error', 'One of the files does not look like a valid PDF or image.');
+                    return redirect()->route('student.dashboard');
+                }
                 $uploadedFiles[] = [
                     'tmp_name' => $_FILES['documents']['tmp_name'][$i],
                     'original' => $originalName,
@@ -126,6 +134,15 @@ class ApplicationController extends Controller
         $hoursClaimed = null;
         if ($typeCode === 'stipend' && trim((string) $request->input('hours_claimed', '')) !== '') {
             $hoursClaimed = max(0, (float) $request->input('hours_claimed'));
+            // Sanity ceiling — Regular Training is weekly (Art. IV Sec. 10.c)
+            // plus special trainings, so even a very active full year of RPAG
+            // involvement shouldn't plausibly clear four digits. Catches
+            // fat-fingered entries (e.g. an extra zero) before they reach the
+            // auto-computed stipend amount on approval.
+            if ($hoursClaimed > 1000) {
+                flash_set('error', 'Hours claimed looks unusually high — please double-check the number before submitting.');
+                return redirect()->route('student.dashboard');
+            }
         }
         $bantogCategory = null;
         if ($typeCode === 'bantog_recognition') {
@@ -268,6 +285,16 @@ class ApplicationController extends Controller
         $reviewer = current_user();
 
         if ($action === 'update_benefit') {
+            // Admin-only: this branch used to run (and return) before the
+            // role/ownership gate below ever executed, letting a
+            // pathfit_faculty reviewer silently rewrite any student's
+            // benefit_records row via this action. Editing a raw benefit
+            // amount/grade/status is an admin action, same as every other
+            // branch in this method that isn't explicitly opened up to
+            // pathfit_faculty below.
+            if ($reviewer['role'] !== 'admin') {
+                return response()->json(['error' => 'Not authorized for this action.'], 403);
+            }
             $benefitId = (int) ($input['benefit_id'] ?? 0);
             $amount = ($input['amount'] ?? '') !== '' ? round((float) $input['amount'], 2) : null;
             $grade = ($input['grade'] ?? '') !== '' ? round((float) $input['grade'], 2) : null;

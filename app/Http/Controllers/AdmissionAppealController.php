@@ -39,6 +39,7 @@ class AdmissionAppealController extends Controller
         $contactNumber = trim($request->input('contact_number', ''));
         $secondarySchool = trim($request->input('secondary_school', ''));
         $achievements = trim($request->input('achievements_summary', ''));
+        $discipline = trim($request->input('discipline', ''));
         $academicStanding = trim($request->input('academic_standing_note', ''));
 
         if ($fullName === '' || $email === '' || $secondarySchool === '' || $achievements === '') {
@@ -47,6 +48,12 @@ class AdmissionAppealController extends Controller
         }
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             flash_set('error', 'Please enter a valid email address.');
+            return $back;
+        }
+        // Art. IV Sec. 12 discipline, so OCA doesn't have to infer it from
+        // the free-text achievements summary above.
+        if (!in_array($discipline, ARTEMIS_APPEAL_DISCIPLINES, true)) {
+            flash_set('error', 'Please select the discipline that best matches your achievements.');
             return $back;
         }
 
@@ -76,6 +83,10 @@ class AdmissionAppealController extends Controller
                 flash_set('error', "\"{$label}\" must be a PDF or image (jpg, png).");
                 return $back;
             }
+            if (!upload_content_type_ok($_FILES[$field]['tmp_name'], $ext)) {
+                flash_set('error', "\"{$label}\" does not look like a valid PDF or image file.");
+                return $back;
+            }
             $uploads[$field] = ['tmp_name' => $_FILES[$field]['tmp_name'], 'ext' => $ext];
         }
 
@@ -83,8 +94,8 @@ class AdmissionAppealController extends Controller
         $pdo->beginTransaction();
         try {
             $stmt = $pdo->prepare(
-                'INSERT INTO admission_appeals (full_name, email, contact_number, secondary_school, achievements_summary, academic_standing_note)
-                 VALUES (:name, :email, :contact, :school, :achievements, :standing)'
+                'INSERT INTO admission_appeals (full_name, email, contact_number, secondary_school, achievements_summary, discipline, academic_standing_note)
+                 VALUES (:name, :email, :contact, :school, :achievements, :discipline, :standing)'
             );
             $stmt->execute([
                 'name' => $fullName,
@@ -92,6 +103,7 @@ class AdmissionAppealController extends Controller
                 'contact' => $contactNumber !== '' ? $contactNumber : null,
                 'school' => $secondarySchool,
                 'achievements' => $achievements,
+                'discipline' => $discipline,
                 'standing' => $academicStanding !== '' ? $academicStanding : null,
             ]);
             $appealId = (int) $pdo->lastInsertId();

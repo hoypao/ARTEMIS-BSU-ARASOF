@@ -40,7 +40,9 @@
             "app/Support/faculty_compliance.php",
             "app/Support/qeo_kpi.php",
             "app/Support/bantog_awards.php",
-            "app/Support/chatbot.php"
+            "app/Support/chatbot.php",
+            "app/Support/equipment.php",
+            "app/Support/disciplines.php"
         ]
     },
     "autoload-dev": {

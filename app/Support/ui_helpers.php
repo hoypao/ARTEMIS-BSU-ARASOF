@@ -21,6 +21,30 @@ const ARTEMIS_STAGE_OVERRIDES = [
     'appeal_admission'     => [3 => 'For Approval (President via TAO)'],
 ];
 
+/**
+ * Admission Appeal statuses in pipeline order (Art. IV Sec. 11-C), excluding the
+ * terminal Approved/Rejected pair. The wording is kept identical to
+ * ARTEMIS_PROGRESS_STAGES as overridden for 'appeal_admission' above, so a
+ * stored status maps straight onto the shared tracker with no lookup table —
+ * index N of this array is stage N+1 of that tracker.
+ */
+const ARTEMIS_APPEAL_CHAIN = [
+    'Submitted', 'Under Review (OCA)', 'Evaluation Stage', 'For Approval (President via TAO)',
+];
+
+/** Stages a TAO Central reviewer owns; OCA keeps everything before them. */
+const ARTEMIS_APPEAL_TAO_STAGES = ['Evaluation Stage', 'For Approval (President via TAO)'];
+
+/**
+ * 1-indexed tracker stage for an appeal status. Approved/Rejected — and any
+ * value not in the chain — land on the terminal circle.
+ */
+function appeal_status_stage(string $status): int
+{
+    $idx = array_search($status, ARTEMIS_APPEAL_CHAIN, true);
+    return $idx === false ? count(ARTEMIS_APPEAL_CHAIN) + 1 : $idx + 1;
+}
+
 /** Stage labels for one application type (falls back to the generic pipeline). */
 function application_progress_stages(?string $typeCode = null): array
 {

@@ -15,8 +15,25 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/modern.css">
+<script src="<?= APP_URL ?>/assets/js/shell-scroll.js" defer></script>
 <style>
-  html, body { overflow-x: hidden; }
+  /* `clip` rather than `hidden`: both stop sideways scrolling, but `hidden`
+     makes html/body a scroll container, which silently kills position:sticky
+     for every descendant — the top bar just scrolled away with the content.
+     `clip` has no scrollport, so the floating bar actually sticks. */
+  html, body { overflow-x: clip; }
+
+  /* No native scrollbar anywhere on this page — not just html/body, but every
+     inner scroller too: the sidebar nav, modal bodies, and the wide tables that
+     scroll sideways inside their cards. Unprefixed, so it covers containers
+     added later without anyone having to remember this rule.
+
+     Scrolling itself is untouched — wheel, trackpad, touch, and keyboard all
+     behave exactly as before; only the bar is painted away, with
+     #scrollProgressBar left as the page-level depth cue. */
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+  ::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
   body { font-family: 'Inter', system-ui, sans-serif; background:#F7F5F2; }
   .adm-input:focus { border-color:#B11226; }
   h1, h2 { font-family: 'Fraunces', Georgia, serif; letter-spacing: -0.01em; }
@@ -58,10 +75,11 @@
 </head>
 <body>
 @include('partials.loading_screen')
+<div id="scrollProgressBar"></div>
 
 <div class="min-h-screen flex bg-background">
   <!-- Desktop Sidebar -->
-  <aside class="hidden lg:flex flex-col w-64 min-h-screen fixed left-0 top-0 bottom-0 z-30" style="background: linear-gradient(180deg, #B11226 0%, #7a0d1a 100%);">
+  <aside class="shell-sidebar float-shadow-brand hidden lg:flex flex-col w-64 fixed z-30" style="background: linear-gradient(180deg, #B11226 0%, #7a0d1a 100%);">
     <div class="px-6 py-5 border-b border-white/10">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white font-bold text-sm"><?= e(strtoupper(mb_substr($admin['first_name'], 0, 1) . mb_substr($admin['last_name'], 0, 1))) ?></div>
@@ -78,6 +96,7 @@
       <button data-section="events" class="admin-nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left" style="color: rgba(255,255,255,0.7);"><i data-lucide="calendar" class="w-4 h-4"></i> Events</button>
       <button data-section="announcements" class="admin-nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left" style="color: rgba(255,255,255,0.7);"><i data-lucide="bell" class="w-4 h-4"></i> Announcements</button>
       <button data-section="partnerships" class="admin-nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left" style="color: rgba(255,255,255,0.7);"><i data-lucide="handshake" class="w-4 h-4"></i> Partnerships</button>
+      <button data-section="equipment" class="admin-nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left" style="color: rgba(255,255,255,0.7);"><i data-lucide="package" class="w-4 h-4"></i> Equipment &amp; Materials</button>
       <button data-section="appeals" class="admin-nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left" style="color: rgba(255,255,255,0.7);"><i data-lucide="user-plus" class="w-4 h-4"></i> Admission Appeals</button>
       <button data-section="academic" class="admin-nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left" style="color: rgba(255,255,255,0.7);"><i data-lucide="book-user" class="w-4 h-4"></i> Academic Support</button>
       <button data-section="reports" class="admin-nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left" style="color: rgba(255,255,255,0.7);"><i data-lucide="bar-chart-3" class="w-4 h-4"></i> Reports</button>
@@ -96,9 +115,9 @@
   </aside>
 
   <!-- Main -->
-  <div class="flex-1 lg:ml-64 flex flex-col min-h-screen">
-    <header class="sticky top-0 z-20 bg-white border-b border-gray-100" style="box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
-      <div class="flex items-center justify-between px-4 sm:px-6 py-3">
+  <div class="shell-main flex-1 flex flex-col min-h-screen">
+    <header id="shellTopbar" class="shell-topbar float-glass float-shadow z-20">
+      <div class="flex items-center justify-between px-4 sm:px-5 py-3">
         <div class="flex items-center gap-3">
           <div class="lg:hidden flex items-center gap-2">
             <div class="w-7 h-7 rounded-full bg-white flex items-center justify-center overflow-hidden flex-shrink-0" style="border:1px solid #eee;"><img src="<?= APP_URL ?>/assets/images/bsulogo.jpg" alt="BatStateU OCA Logo" class="w-full h-full object-cover"></div>
@@ -408,7 +427,7 @@
 
       <!-- QEO KPI TRACKER -->
       <div class="admin-section hidden flex-col gap-6" data-section="kpi">
-        <div><h2 class="sr-only">QEO KPI Tracker</h2><p class="text-xs text-gray-500 mt-0.5">Live progress against the Office of Culture and Arts' <?= (int) $qeoKpis['year'] ?> Quality/Educational Organizations Objectives (BatStateU-QEO-OCA-03), projected to year-end at the current pace (<?= e($qeoKpis['paceFraction']) ?>% of the year elapsed). Metrics not tracked by ARTEMIS (equipment procurement, satisfaction surveys, etc.) are intentionally omitted rather than estimated.</p></div>
+        <div><h2 class="sr-only">QEO KPI Tracker</h2><p class="text-xs text-gray-500 mt-0.5">Live progress against the Office of Culture and Arts' <?= (int) $qeoKpis['year'] ?> Quality/Educational Organizations Objectives (BatStateU-QEO-OCA-03), projected to year-end at the current pace (<?= e($qeoKpis['paceFraction']) ?>% of the year elapsed). Metrics not tracked by ARTEMIS (customer satisfaction surveys, data-privacy incidents, etc.) are intentionally omitted rather than estimated.</p></div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <?php foreach ($qeoKpis['metrics'] as $m):
               $statusBg = $m['status'] === 'Behind Pace' ? '#FEE2E2' : ($m['status'] === 'Slightly Behind' ? '#FEF9C3' : '#DCFCE7');
@@ -585,6 +604,200 @@
         </div>
       </div>
 
+      <!-- EQUIPMENT & MATERIALS -->
+      <div class="admin-section hidden flex-col gap-6" data-section="equipment">
+        <div><span class="text-[10px] font-semibold uppercase tracking-wider block mb-1" style="color:#B11226;">Equipment &amp; Materials</span><h2 class="font-bold text-base sm:text-lg" style="color:#1a1a2e;">Procurement and Management of Culture and Arts Materials and Equipment</h2><p class="text-xs text-gray-500 mt-0.5">Property Custodian inventory (Art. III Sec. 6.C) and the PPMP &rarr; Purchase Request &rarr; Delivered pipeline (Art. VII Sec. 20). Feeds QEO Objective 4 on the KPI Tracker.</p></div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <?php foreach ($equipmentConditionCounts as $cond => $count): ?>
+          <div class="modern-card bg-white rounded-2xl border border-gray-100 p-4" style="box-shadow: 0 1px 6px rgba(0,0,0,0.06);">
+            <span class="text-xs text-gray-500 block mb-1"><?= e($cond) ?></span>
+            <span class="text-xl font-bold" style="color:#1a1a2e;"><?= (int) $count ?></span>
+          </div>
+          <?php endforeach; ?>
+        </div>
+
+        <div class="modern-card bg-white rounded-2xl border border-gray-100 p-5" style="box-shadow: 0 1px 6px rgba(0,0,0,0.06);">
+          <h3 class="font-semibold text-sm mb-4" id="equipFormTitle" style="color:#1a1a2e;">Add Inventory Item</h3>
+          <input type="hidden" id="equipIdInput" value="">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
+            <div><label for="equipNameInput" class="text-xs text-gray-600 block mb-1">Item Name</label><input id="equipNameInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="e.g. Wireless Lapel Microphone Set"></div>
+            <div>
+              <label for="equipCategoryInput" class="text-xs text-gray-600 block mb-1">Category</label>
+              <select id="equipCategoryInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+                <?php foreach (ARTEMIS_EQUIPMENT_CATEGORIES as $cat): ?><option><?= e($cat) ?></option><?php endforeach; ?>
+              </select>
+            </div>
+            <div>
+              <label for="equipConditionInput" class="text-xs text-gray-600 block mb-1">Condition</label>
+              <select id="equipConditionInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+                <?php foreach (ARTEMIS_EQUIPMENT_CONDITIONS as $cond): ?><option><?= e($cond) ?></option><?php endforeach; ?>
+              </select>
+            </div>
+            <div><label for="equipCampusInput" class="text-xs text-gray-600 block mb-1">Campus</label><input id="equipCampusInput" value="ARASOF-Nasugbu" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
+            <div><label for="equipCustodianInput" class="text-xs text-gray-600 block mb-1">Custodian</label><input id="equipCustodianInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="e.g. Juan Dela Cruz"></div>
+            <div><label for="equipLocationInput" class="text-xs text-gray-600 block mb-1">Location</label><input id="equipLocationInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="e.g. OCA Storage Room"></div>
+            <div><label for="equipAcqDateInput" class="text-xs text-gray-600 block mb-1">Acquisition Date</label><input type="date" id="equipAcqDateInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
+            <div><label for="equipAcqCostInput" class="text-xs text-gray-600 block mb-1">Acquisition Cost (&#8369;)</label><input type="number" step="0.01" min="0" id="equipAcqCostInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="0.00"></div>
+          </div>
+          <div class="mb-4"><label for="equipNotesInput" class="text-xs text-gray-600 block mb-1">Notes</label><textarea id="equipNotesInput" rows="2" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="Maintenance history, accountability notes..."></textarea></div>
+          <div class="flex gap-3">
+            <button type="button" id="equipResetBtn" class="hidden px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50">Cancel Edit</button>
+            <button type="button" id="saveEquipBtn" class="modern-btn px-4 py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2" style="background:#B11226;"><i data-lucide="plus" class="w-4 h-4"></i> <span id="saveEquipLabel">Add Item</span></button>
+          </div>
+        </div>
+
+        <div class="modern-card bg-white rounded-2xl border border-gray-100 overflow-hidden" style="box-shadow: 0 1px 6px rgba(0,0,0,0.06);">
+          <div class="px-5 py-4 border-b border-gray-100"><h3 class="font-semibold text-sm" style="color:#1a1a2e;">Inventory (Art. III Sec. 6.C.a&ndash;b)</h3></div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead><tr style="background:#F9FAFB;"><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Item</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Category</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Condition</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Custodian / Location</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Acquired</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Action</th></tr></thead>
+              <tbody id="equipTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="modern-card bg-white rounded-2xl border border-gray-100 p-5" style="box-shadow: 0 1px 6px rgba(0,0,0,0.06);">
+          <h3 class="font-semibold text-sm mb-4" id="reqFormTitle" style="color:#1a1a2e;">New Procurement Request</h3>
+          <input type="hidden" id="reqIdInput" value="">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
+            <div><label for="reqNameInput" class="text-xs text-gray-600 block mb-1">Item Name</label><input id="reqNameInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="e.g. Rondalla String Set"></div>
+            <div>
+              <label for="reqCategoryInput" class="text-xs text-gray-600 block mb-1">Category</label>
+              <select id="reqCategoryInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+                <?php foreach (ARTEMIS_EQUIPMENT_CATEGORIES as $cat): ?><option><?= e($cat) ?></option><?php endforeach; ?>
+              </select>
+            </div>
+            <div><label for="reqQtyInput" class="text-xs text-gray-600 block mb-1">Quantity</label><input type="number" min="1" step="1" id="reqQtyInput" value="1" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
+            <div><label for="reqCostInput" class="text-xs text-gray-600 block mb-1">Estimated Cost (&#8369;)</label><input type="number" step="0.01" min="0" id="reqCostInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="0.00"></div>
+            <div><label for="reqPpmpInput" class="text-xs text-gray-600 block mb-1">PPMP Reference</label><input id="reqPpmpInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="e.g. PPMP-2026-OCA-014"></div>
+            <div>
+              <label for="reqStatusInput" class="text-xs text-gray-600 block mb-1">Status</label>
+              <select id="reqStatusInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+                <?php foreach (ARTEMIS_PROCUREMENT_STATUSES as $st): ?><option><?= e($st) ?></option><?php endforeach; ?>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3"><label for="reqJustificationInput" class="text-xs text-gray-600 block mb-1">Justification</label><textarea id="reqJustificationInput" rows="2" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="Why this is needed..."></textarea></div>
+          <div class="mb-4"><label for="reqNotesInput" class="text-xs text-gray-600 block mb-1">Notes</label><textarea id="reqNotesInput" rows="2" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="Supplier, delivery updates..."></textarea></div>
+          <div class="flex gap-3">
+            <button type="button" id="reqResetBtn" class="hidden px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50">Cancel Edit</button>
+            <button type="button" id="saveReqBtn" class="modern-btn px-4 py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2" style="background:#B11226;"><i data-lucide="plus" class="w-4 h-4"></i> <span id="saveReqLabel">Add Request</span></button>
+          </div>
+        </div>
+
+        <div class="modern-card bg-white rounded-2xl border border-gray-100 overflow-hidden" style="box-shadow: 0 1px 6px rgba(0,0,0,0.06);">
+          <div class="px-5 py-4 border-b border-gray-100"><h3 class="font-semibold text-sm" style="color:#1a1a2e;">Procurement Requests (Art. VII Sec. 20-A)</h3></div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead><tr style="background:#F9FAFB;"><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Item</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Qty</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Est. Cost</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">PPMP Ref</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Status</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Action</th></tr></thead>
+              <tbody id="reqTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="modern-card bg-white rounded-2xl border border-gray-100 p-5" style="box-shadow: 0 1px 6px rgba(0,0,0,0.06);">
+          <h3 class="font-semibold text-sm mb-4" id="shareFormTitle" style="color:#1a1a2e;">New Resource Sharing Request</h3>
+          <input type="hidden" id="shareIdInput" value="">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
+            <div>
+              <label for="shareEquipmentInput" class="text-xs text-gray-600 block mb-1">Item</label>
+              <select id="shareEquipmentInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+                <option value="">Select an item&hellip;</option>
+                <?php foreach ($equipmentItems as $eq): ?><option value="<?= (int) $eq['equipment_id'] ?>"><?= e($eq['item_name']) ?></option><?php endforeach; ?>
+              </select>
+            </div>
+            <div>
+              <label for="shareFromCampusInput" class="text-xs text-gray-600 block mb-1">From Campus</label>
+              <select id="shareFromCampusInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+                <?php foreach (ARTEMIS_CAMPUSES as $c): ?><option><?= e($c) ?></option><?php endforeach; ?>
+              </select>
+            </div>
+            <div>
+              <label for="shareToCampusInput" class="text-xs text-gray-600 block mb-1">To Campus</label>
+              <select id="shareToCampusInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+                <?php foreach (ARTEMIS_CAMPUSES as $c): ?><option><?= e($c) ?></option><?php endforeach; ?>
+              </select>
+            </div>
+            <div><label for="shareStartDateInput" class="text-xs text-gray-600 block mb-1">Start Date</label><input type="date" id="shareStartDateInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
+            <div><label for="shareEndDateInput" class="text-xs text-gray-600 block mb-1">End Date</label><input type="date" id="shareEndDateInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
+            <div>
+              <label for="shareStatusInput" class="text-xs text-gray-600 block mb-1">Status</label>
+              <select id="shareStatusInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+                <?php foreach (ARTEMIS_SHARE_STATUSES as $st): ?><option><?= e($st) ?></option><?php endforeach; ?>
+              </select>
+            </div>
+            <div>
+              <label for="shareConditionInput" class="text-xs text-gray-600 block mb-1">Condition on Return</label>
+              <select id="shareConditionInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+                <option value="">&mdash; Not returned yet &mdash;</option>
+                <?php foreach (ARTEMIS_EQUIPMENT_CONDITIONS as $cond): ?><option><?= e($cond) ?></option><?php endforeach; ?>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3"><label for="sharePurposeInput" class="text-xs text-gray-600 block mb-1">Purpose</label><textarea id="sharePurposeInput" rows="2" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="What the item is needed for..."></textarea></div>
+          <div class="mb-4"><label for="shareNotesInput" class="text-xs text-gray-600 block mb-1">Notes</label><textarea id="shareNotesInput" rows="2" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="Transit details, condition notes..."></textarea></div>
+          <div class="flex gap-3">
+            <button type="button" id="shareResetBtn" class="hidden px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50">Cancel Edit</button>
+            <button type="button" id="saveShareBtn" class="modern-btn px-4 py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2" style="background:#B11226;"><i data-lucide="plus" class="w-4 h-4"></i> <span id="saveShareLabel">Add Request</span></button>
+          </div>
+        </div>
+
+        <div class="modern-card bg-white rounded-2xl border border-gray-100 overflow-hidden" style="box-shadow: 0 1px 6px rgba(0,0,0,0.06);">
+          <div class="px-5 py-4 border-b border-gray-100"><h3 class="font-semibold text-sm" style="color:#1a1a2e;">Cross-Campus Resource Sharing (Art. VII Sec. 20-C)</h3></div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead><tr style="background:#F9FAFB;"><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Item</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Route</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Dates</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Status</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Action</th></tr></thead>
+              <tbody id="shareTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="modern-card bg-white rounded-2xl border border-gray-100 p-5" style="box-shadow: 0 1px 6px rgba(0,0,0,0.06);">
+          <h3 class="font-semibold text-sm mb-4" id="lossFormTitle" style="color:#1a1a2e;">New Loss / Damage Report</h3>
+          <input type="hidden" id="lossIdInput" value="">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
+            <div>
+              <label for="lossEquipmentInput" class="text-xs text-gray-600 block mb-1">Item</label>
+              <select id="lossEquipmentInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+                <option value="">Select an item&hellip;</option>
+                <?php foreach ($equipmentItems as $eq): ?><option value="<?= (int) $eq['equipment_id'] ?>"><?= e($eq['item_name']) ?></option><?php endforeach; ?>
+              </select>
+            </div>
+            <div>
+              <label for="lossTypeInput" class="text-xs text-gray-600 block mb-1">Report Type</label>
+              <select id="lossTypeInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+                <?php foreach (ARTEMIS_LOSS_REPORT_TYPES as $t): ?><option><?= e($t) ?></option><?php endforeach; ?>
+              </select>
+            </div>
+            <div><label for="lossIncidentDateInput" class="text-xs text-gray-600 block mb-1">Incident Date</label><input type="date" id="lossIncidentDateInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none"></div>
+            <div>
+              <label for="lossStatusInput" class="text-xs text-gray-600 block mb-1">Status</label>
+              <select id="lossStatusInput" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white">
+                <?php foreach (ARTEMIS_LOSS_REPORT_STATUSES as $st): ?><option><?= e($st) ?></option><?php endforeach; ?>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3"><label for="lossDescriptionInput" class="text-xs text-gray-600 block mb-1">Description</label><textarea id="lossDescriptionInput" rows="2" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="Circumstances of the loss/damage..."></textarea></div>
+          <div class="mb-4"><label for="lossResolutionInput" class="text-xs text-gray-600 block mb-1">Resolution Notes</label><textarea id="lossResolutionInput" rows="2" class="adm-input modern-input w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="Investigation findings, replacement/repair action..."></textarea></div>
+          <p class="text-xs text-gray-400 mb-4">Saving this report also updates the item's Condition in the inventory above (Damaged &rarr; "Needs Repair"/"Damaged"; Lost/Stolen/Destroyed &rarr; "Lost").</p>
+          <div class="flex gap-3">
+            <button type="button" id="lossResetBtn" class="hidden px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50">Cancel Edit</button>
+            <button type="button" id="saveLossBtn" class="modern-btn px-4 py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2" style="background:#B11226;"><i data-lucide="plus" class="w-4 h-4"></i> <span id="saveLossLabel">Add Report</span></button>
+          </div>
+        </div>
+
+        <div class="modern-card bg-white rounded-2xl border border-gray-100 overflow-hidden" style="box-shadow: 0 1px 6px rgba(0,0,0,0.06);">
+          <div class="px-5 py-4 border-b border-gray-100"><h3 class="font-semibold text-sm" style="color:#1a1a2e;">Loss / Damage Reports &mdash; RLSDDP (Art. VII Sec. 20-C.2)</h3></div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead><tr style="background:#F9FAFB;"><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Item</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Type</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Incident Date</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Status</th><th class="text-left px-4 py-3 text-xs font-semibold text-gray-500">Action</th></tr></thead>
+              <tbody id="lossTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- ADMISSION APPEALS -->
       <div class="admin-section hidden flex-col gap-6" data-section="appeals">
         <div><span class="text-[10px] font-semibold uppercase tracking-wider block mb-1" style="color:#B11226;">Admission Appeals</span><h2 class="font-bold text-base sm:text-lg" style="color:#1a1a2e;">Recruitment through Exceptional Achievements</h2><p class="text-xs text-gray-500 mt-0.5">Prospective students appealing for admission based on cultural/artistic excellence (Art. IV Sec. 11; BOR Resolution No. 44 S. 2024). Public applicants submit at <span class="font-mono">/appeal/apply</span> &mdash; no ARTEMIS account needed.</p></div>
@@ -664,7 +877,7 @@
     </main>
 
     <!-- MOBILE BOTTOM NAV -->
-    <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-100" style="box-shadow: 0 -2px 12px rgba(0,0,0,0.06); padding-bottom: env(safe-area-inset-bottom);">
+    <nav class="shell-mobilenav float-glass float-shadow lg:hidden fixed z-30">
       <div class="flex items-stretch">
         <button type="button" data-section-link="dashboard" class="admin-mobile-nav-btn flex-1 flex flex-col items-center justify-center py-2.5 gap-1" data-sec="dashboard"><div class="mobile-nav-icon-wrap w-10 h-8 flex items-center justify-center rounded-xl transition-all" style="background:#FEE2E2;"><i data-lucide="layout-dashboard" class="w-4 h-4" style="color:#B11226;"></i></div><span class="mobile-nav-label text-[10px] font-medium leading-none" style="color:#B11226;">Dashboard</span></button>
         <button type="button" data-section-link="applications" class="admin-mobile-nav-btn flex-1 flex flex-col items-center justify-center py-2.5 gap-1" data-sec="applications"><div class="mobile-nav-icon-wrap w-10 h-8 flex items-center justify-center rounded-xl transition-all"><i data-lucide="file-text" class="w-4 h-4" style="color:#4B5563;"></i></div><span class="mobile-nav-label text-[10px] font-medium leading-none" style="color:#4B5563;">Apps</span></button>
@@ -688,6 +901,7 @@
     <button type="button" data-section-link="kpi" class="more-menu-item flex items-center gap-3 w-full px-3 py-3.5 rounded-xl mb-1 transition-all" style="color:#374151;"><i data-lucide="trending-up" class="w-5 h-5"></i><span class="text-sm font-medium">QEO KPI Tracker</span></button>
     <button type="button" data-section-link="reports" class="more-menu-item flex items-center gap-3 w-full px-3 py-3.5 rounded-xl mb-1 transition-all" style="color:#374151;"><i data-lucide="bar-chart-3" class="w-5 h-5"></i><span class="text-sm font-medium">Reports & Analytics</span></button>
     <button type="button" data-section-link="partnerships" class="more-menu-item flex items-center gap-3 w-full px-3 py-3.5 rounded-xl mb-1 transition-all" style="color:#374151;"><i data-lucide="handshake" class="w-5 h-5"></i><span class="text-sm font-medium">Partnerships</span></button>
+    <button type="button" data-section-link="equipment" class="more-menu-item flex items-center gap-3 w-full px-3 py-3.5 rounded-xl mb-1 transition-all" style="color:#374151;"><i data-lucide="package" class="w-5 h-5"></i><span class="text-sm font-medium">Equipment &amp; Materials</span></button>
     <button type="button" data-section-link="appeals" class="more-menu-item flex items-center gap-3 w-full px-3 py-3.5 rounded-xl mb-1 transition-all" style="color:#374151;"><i data-lucide="user-plus" class="w-5 h-5"></i><span class="text-sm font-medium">Admission Appeals</span></button>
     <button type="button" data-section-link="academic" class="more-menu-item flex items-center gap-3 w-full px-3 py-3.5 rounded-xl mb-1 transition-all" style="color:#374151;"><i data-lucide="book-user" class="w-5 h-5"></i><span class="text-sm font-medium">Academic Support</span></button>
     <button type="button" data-section-link="settings" class="more-menu-item flex items-center gap-3 w-full px-3 py-3.5 rounded-xl mb-1 transition-all" style="color:#374151;"><i data-lucide="settings" class="w-5 h-5"></i><span class="text-sm font-medium">System Settings</span></button>
@@ -1062,11 +1276,42 @@ var PARTNERS = <?= json_encode(array_map(function ($p) {
     ];
 }, $partnerOrganizations), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
 
+var EQUIPMENT_ITEMS = <?= json_encode(array_map(function ($eq) {
+    return [
+        'id' => (int) $eq['equipment_id'], 'itemName' => $eq['item_name'], 'category' => $eq['category'],
+        'campus' => $eq['campus'], 'condition' => $eq['condition_status'], 'custodianName' => $eq['custodian_name'],
+        'location' => $eq['location'], 'acquisitionDate' => $eq['acquisition_date'], 'acquisitionCost' => $eq['acquisition_cost'] !== null ? (float) $eq['acquisition_cost'] : null,
+        'notes' => $eq['notes'],
+    ];
+}, $equipmentItems), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+var PROCUREMENT_REQUESTS = <?= json_encode(array_map(function ($r) {
+    return [
+        'id' => (int) $r['request_id'], 'itemName' => $r['item_name'], 'category' => $r['category'],
+        'quantity' => (int) $r['quantity'], 'estimatedCost' => $r['estimated_cost'] !== null ? (float) $r['estimated_cost'] : null,
+        'ppmpReference' => $r['ppmp_reference'], 'justification' => $r['justification'], 'status' => $r['status'], 'notes' => $r['notes'],
+    ];
+}, $procurementRequests), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+var SHARE_REQUESTS = <?= json_encode(array_map(function ($s) {
+    return [
+        'id' => (int) $s['share_id'], 'equipmentId' => (int) $s['equipment_id'], 'itemName' => $s['item_name'],
+        'fromCampus' => $s['from_campus'], 'toCampus' => $s['to_campus'], 'purpose' => $s['purpose'],
+        'startDate' => $s['requested_start_date'], 'endDate' => $s['requested_end_date'], 'status' => $s['status'],
+        'conditionOnReturn' => $s['condition_on_return'], 'notes' => $s['notes'],
+    ];
+}, $resourceShareRequests), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+var LOSS_REPORTS = <?= json_encode(array_map(function ($r) {
+    return [
+        'id' => (int) $r['report_id'], 'equipmentId' => (int) $r['equipment_id'], 'itemName' => $r['item_name'],
+        'reportType' => $r['report_type'], 'incidentDate' => $r['incident_date'], 'description' => $r['description'],
+        'status' => $r['status'], 'resolutionNotes' => $r['resolution_notes'],
+    ];
+}, $equipmentLossReports), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+
 var APPEALS = <?= json_encode(array_map(function ($a) {
     return [
         'id' => (int) $a['appeal_id'], 'fullName' => $a['full_name'], 'email' => $a['email'],
         'contactNumber' => $a['contact_number'], 'secondarySchool' => $a['secondary_school'], 'campus' => $a['campus'],
-        'achievements' => $a['achievements_summary'], 'academicStanding' => $a['academic_standing_note'],
+        'achievements' => $a['achievements_summary'], 'discipline' => $a['discipline'] ?? null, 'academicStanding' => $a['academic_standing_note'],
         'certificatesUrl' => $a['certificates_path'] ? APP_URL . '/' . $a['certificates_path'] : null,
         'recommendationUrl' => $a['recommendation_letter_path'] ? APP_URL . '/' . $a['recommendation_letter_path'] : null,
         'schoolStatementUrl' => $a['school_statement_path'] ? APP_URL . '/' . $a['school_statement_path'] : null,
@@ -1126,7 +1371,7 @@ function runCountUps(scope) {
 runCountUps(document.querySelector('.admin-section[data-section="dashboard"]'));
 
 // ---------- Section navigation ----------
-var titles = { dashboard: 'Admin Dashboard', applications: 'Applications', trainers: 'Trainer Evaluation', talent: 'Talent Match', compliance: 'Compliance', kpi: 'QEO KPI Tracker', reports: 'Reports & Analytics', events: 'Events Management', announcements: 'Announcements', partnerships: 'Partnerships', appeals: 'Admission Appeals', academic: 'Academic Support', settings: 'System Settings' };
+var titles = { dashboard: 'Admin Dashboard', applications: 'Applications', trainers: 'Trainer Evaluation', talent: 'Talent Match', compliance: 'Compliance', kpi: 'QEO KPI Tracker', reports: 'Reports & Analytics', events: 'Events Management', announcements: 'Announcements', partnerships: 'Partnerships', equipment: 'Equipment & Materials', appeals: 'Admission Appeals', academic: 'Academic Support', settings: 'System Settings' };
 var state = { section: 'dashboard', module: '', filterStatus: 'All', search: '', highlightedCode: null, processingCode: null };
 
 function setSection(sec) {
@@ -1745,12 +1990,468 @@ document.getElementById('savePartnerBtn').addEventListener('click', function () 
   });
 });
 
+// ---------- Equipment & Materials Inventory / Procurement (Art. VII; Art. III Sec. 6.C) ----------
+var EQUIP_CONDITION_COLORS = {
+  'Good': ['#DCFCE7', '#15803D'], 'Needs Repair': ['#FEF9C3', '#92400E'], 'Damaged': ['#FFEDD5', '#C2410C'], 'Lost': ['#FEE2E2', '#B91C1C'],
+};
+function renderEquipment() {
+  var body = document.getElementById('equipTableBody');
+  if (!body) return;
+  if (!EQUIPMENT_ITEMS.length) { body.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-xs text-gray-600">No inventory items on file yet.</td></tr>'; return; }
+  body.innerHTML = EQUIPMENT_ITEMS.map(function (it) {
+    var colors = EQUIP_CONDITION_COLORS[it.condition] || EQUIP_CONDITION_COLORS['Good'];
+    return '<tr class="border-t border-gray-50">' +
+      '<td class="px-4 py-3 text-xs font-medium" style="color:#1a1a2e;">' + it.itemName + '</td>' +
+      '<td class="px-4 py-3 text-xs text-gray-500">' + (it.category || '&mdash;') + '</td>' +
+      '<td class="px-4 py-3 text-xs"><span class="px-2 py-1 rounded-full text-[10px] font-semibold" style="background:' + colors[0] + '; color:' + colors[1] + ';">' + it.condition + '</span></td>' +
+      '<td class="px-4 py-3 text-xs text-gray-500">' + (it.custodianName || '&mdash;') + (it.location ? '<span class="text-gray-400 block">' + it.location + '</span>' : '') + '</td>' +
+      '<td class="px-4 py-3 text-xs text-gray-500">' + (it.acquisitionDate || '&mdash;') + '</td>' +
+      '<td class="px-4 py-3 text-xs flex gap-1.5">' +
+        '<button type="button" class="equip-edit-btn px-2 py-1 rounded-lg text-xs font-semibold" style="background:#F3F4F6; color:#374151;" data-id="' + it.id + '">Edit</button>' +
+        '<button type="button" class="equip-delete-btn px-2 py-1 rounded-lg text-xs font-semibold" style="background:#FEE2E2; color:#B91C1C;" data-id="' + it.id + '">Delete</button>' +
+      '</td></tr>';
+  }).join('');
+}
+renderEquipment();
+function resetEquipForm() {
+  document.getElementById('equipFormTitle').textContent = 'Add Inventory Item';
+  document.getElementById('saveEquipLabel').textContent = 'Add Item';
+  document.getElementById('equipResetBtn').classList.add('hidden');
+  document.getElementById('equipIdInput').value = '';
+  document.getElementById('equipNameInput').value = '';
+  document.getElementById('equipCategoryInput').value = 'Music';
+  document.getElementById('equipConditionInput').value = 'Good';
+  document.getElementById('equipCampusInput').value = 'ARASOF-Nasugbu';
+  document.getElementById('equipCustodianInput').value = '';
+  document.getElementById('equipLocationInput').value = '';
+  document.getElementById('equipAcqDateInput').value = '';
+  document.getElementById('equipAcqCostInput').value = '';
+  document.getElementById('equipNotesInput').value = '';
+}
+document.getElementById('equipTableBody').addEventListener('click', function (e) {
+  var editBtn = e.target.closest('.equip-edit-btn');
+  if (editBtn) {
+    var it = EQUIPMENT_ITEMS.find(function (x) { return x.id === parseInt(editBtn.dataset.id, 10); });
+    if (!it) return;
+    document.getElementById('equipFormTitle').textContent = 'Edit Inventory Item';
+    document.getElementById('saveEquipLabel').textContent = 'Update Item';
+    document.getElementById('equipResetBtn').classList.remove('hidden');
+    document.getElementById('equipIdInput').value = it.id;
+    document.getElementById('equipNameInput').value = it.itemName;
+    document.getElementById('equipCategoryInput').value = it.category || 'Music';
+    document.getElementById('equipConditionInput').value = it.condition;
+    document.getElementById('equipCampusInput').value = it.campus || 'ARASOF-Nasugbu';
+    document.getElementById('equipCustodianInput').value = it.custodianName || '';
+    document.getElementById('equipLocationInput').value = it.location || '';
+    document.getElementById('equipAcqDateInput').value = it.acquisitionDate || '';
+    document.getElementById('equipAcqCostInput').value = it.acquisitionCost !== null ? it.acquisitionCost : '';
+    document.getElementById('equipNotesInput').value = it.notes || '';
+    document.getElementById('equipNameInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  var delBtn = e.target.closest('.equip-delete-btn');
+  if (delBtn) {
+    var id = parseInt(delBtn.dataset.id, 10);
+    fetch(APP_URL + '/admin/equipment', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ csrf_token: CSRF_TOKEN, action: 'delete', equipment_id: id }),
+    }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (res) {
+      if (!res.ok) { showToast(res.data.error || 'Failed to delete.', 'error'); return; }
+      EQUIPMENT_ITEMS = EQUIPMENT_ITEMS.filter(function (x) { return x.id !== id; });
+      renderEquipment();
+      showToast('Inventory item removed.', 'success');
+    });
+  }
+});
+document.getElementById('equipResetBtn').addEventListener('click', resetEquipForm);
+document.getElementById('saveEquipBtn').addEventListener('click', function () {
+  var id = parseInt(document.getElementById('equipIdInput').value, 10) || 0;
+  var name = document.getElementById('equipNameInput').value.trim();
+  if (!name) { showToast('Enter the item name.', 'error'); return; }
+  var payload = {
+    csrf_token: CSRF_TOKEN, action: 'save', equipment_id: id, item_name: name,
+    category: document.getElementById('equipCategoryInput').value,
+    condition_status: document.getElementById('equipConditionInput').value,
+    campus: document.getElementById('equipCampusInput').value.trim(),
+    custodian_name: document.getElementById('equipCustodianInput').value.trim(),
+    location: document.getElementById('equipLocationInput').value.trim(),
+    acquisition_date: document.getElementById('equipAcqDateInput').value,
+    acquisition_cost: document.getElementById('equipAcqCostInput').value,
+    notes: document.getElementById('equipNotesInput').value.trim(),
+  };
+  fetch(APP_URL + '/admin/equipment', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+  }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (res) {
+    if (!res.ok) { showToast(res.data.error || 'Failed to save inventory item.', 'error'); return; }
+    var record = {
+      id: res.data.equipment_id, itemName: name, category: payload.category, condition: payload.condition_status,
+      campus: payload.campus, custodianName: payload.custodian_name || null, location: payload.location || null,
+      acquisitionDate: payload.acquisition_date || null, acquisitionCost: payload.acquisition_cost !== '' ? parseFloat(payload.acquisition_cost) : null,
+      notes: payload.notes || null,
+    };
+    if (id) {
+      var idx = EQUIPMENT_ITEMS.findIndex(function (x) { return x.id === id; });
+      if (idx !== -1) EQUIPMENT_ITEMS[idx] = record;
+      showToast('Inventory item updated.', 'success');
+    } else {
+      EQUIPMENT_ITEMS.unshift(record);
+      showToast('Inventory item added.', 'success');
+    }
+    renderEquipment();
+    resetEquipForm();
+  });
+});
+
+var REQ_STATUS_COLORS = {
+  'Draft': ['#F3F4F6', '#6B7280'], 'PPMP Submitted': ['#FEF9C3', '#92400E'], 'PR Prepared': ['#EDE9FE', '#6D28D9'],
+  'Approved': ['#DBEAFE', '#1D4ED8'], 'Delivered': ['#DCFCE7', '#15803D'], 'Cancelled': ['#FEE2E2', '#B91C1C'],
+};
+function renderRequests() {
+  var body = document.getElementById('reqTableBody');
+  if (!body) return;
+  if (!PROCUREMENT_REQUESTS.length) { body.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-xs text-gray-600">No procurement requests on file yet.</td></tr>'; return; }
+  body.innerHTML = PROCUREMENT_REQUESTS.map(function (r) {
+    var colors = REQ_STATUS_COLORS[r.status] || REQ_STATUS_COLORS['Draft'];
+    return '<tr class="border-t border-gray-50">' +
+      '<td class="px-4 py-3 text-xs font-medium" style="color:#1a1a2e;">' + r.itemName + '<span class="text-gray-400 block">' + (r.category || '') + '</span></td>' +
+      '<td class="px-4 py-3 text-xs text-gray-500">' + r.quantity + '</td>' +
+      '<td class="px-4 py-3 text-xs text-gray-500">' + (r.estimatedCost !== null ? '&#8369;' + r.estimatedCost.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '&mdash;') + '</td>' +
+      '<td class="px-4 py-3 text-xs text-gray-500">' + (r.ppmpReference || '&mdash;') + '</td>' +
+      '<td class="px-4 py-3 text-xs"><span class="px-2 py-1 rounded-full text-[10px] font-semibold" style="background:' + colors[0] + '; color:' + colors[1] + ';">' + r.status + '</span></td>' +
+      '<td class="px-4 py-3 text-xs flex gap-1.5">' +
+        '<button type="button" class="req-edit-btn px-2 py-1 rounded-lg text-xs font-semibold" style="background:#F3F4F6; color:#374151;" data-id="' + r.id + '">Edit</button>' +
+        '<button type="button" class="req-delete-btn px-2 py-1 rounded-lg text-xs font-semibold" style="background:#FEE2E2; color:#B91C1C;" data-id="' + r.id + '">Delete</button>' +
+      '</td></tr>';
+  }).join('');
+}
+renderRequests();
+function resetReqForm() {
+  document.getElementById('reqFormTitle').textContent = 'New Procurement Request';
+  document.getElementById('saveReqLabel').textContent = 'Add Request';
+  document.getElementById('reqResetBtn').classList.add('hidden');
+  document.getElementById('reqIdInput').value = '';
+  document.getElementById('reqNameInput').value = '';
+  document.getElementById('reqCategoryInput').value = 'Music';
+  document.getElementById('reqQtyInput').value = '1';
+  document.getElementById('reqCostInput').value = '';
+  document.getElementById('reqPpmpInput').value = '';
+  document.getElementById('reqStatusInput').value = 'Draft';
+  document.getElementById('reqJustificationInput').value = '';
+  document.getElementById('reqNotesInput').value = '';
+}
+document.getElementById('reqTableBody').addEventListener('click', function (e) {
+  var editBtn = e.target.closest('.req-edit-btn');
+  if (editBtn) {
+    var r = PROCUREMENT_REQUESTS.find(function (x) { return x.id === parseInt(editBtn.dataset.id, 10); });
+    if (!r) return;
+    document.getElementById('reqFormTitle').textContent = 'Edit Procurement Request';
+    document.getElementById('saveReqLabel').textContent = 'Update Request';
+    document.getElementById('reqResetBtn').classList.remove('hidden');
+    document.getElementById('reqIdInput').value = r.id;
+    document.getElementById('reqNameInput').value = r.itemName;
+    document.getElementById('reqCategoryInput').value = r.category || 'Music';
+    document.getElementById('reqQtyInput').value = r.quantity;
+    document.getElementById('reqCostInput').value = r.estimatedCost !== null ? r.estimatedCost : '';
+    document.getElementById('reqPpmpInput').value = r.ppmpReference || '';
+    document.getElementById('reqStatusInput').value = r.status;
+    document.getElementById('reqJustificationInput').value = r.justification || '';
+    document.getElementById('reqNotesInput').value = r.notes || '';
+    document.getElementById('reqNameInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  var delBtn = e.target.closest('.req-delete-btn');
+  if (delBtn) {
+    var id = parseInt(delBtn.dataset.id, 10);
+    fetch(APP_URL + '/admin/procurement', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ csrf_token: CSRF_TOKEN, action: 'delete', request_id: id }),
+    }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (res) {
+      if (!res.ok) { showToast(res.data.error || 'Failed to delete.', 'error'); return; }
+      PROCUREMENT_REQUESTS = PROCUREMENT_REQUESTS.filter(function (x) { return x.id !== id; });
+      renderRequests();
+      showToast('Procurement request removed.', 'success');
+    });
+  }
+});
+document.getElementById('reqResetBtn').addEventListener('click', resetReqForm);
+document.getElementById('saveReqBtn').addEventListener('click', function () {
+  var id = parseInt(document.getElementById('reqIdInput').value, 10) || 0;
+  var name = document.getElementById('reqNameInput').value.trim();
+  if (!name) { showToast('Enter the item name.', 'error'); return; }
+  var payload = {
+    csrf_token: CSRF_TOKEN, action: 'save', request_id: id, item_name: name,
+    category: document.getElementById('reqCategoryInput').value,
+    quantity: document.getElementById('reqQtyInput').value,
+    estimated_cost: document.getElementById('reqCostInput').value,
+    ppmp_reference: document.getElementById('reqPpmpInput').value.trim(),
+    status: document.getElementById('reqStatusInput').value,
+    justification: document.getElementById('reqJustificationInput').value.trim(),
+    notes: document.getElementById('reqNotesInput').value.trim(),
+  };
+  fetch(APP_URL + '/admin/procurement', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+  }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (res) {
+    if (!res.ok) { showToast(res.data.error || 'Failed to save procurement request.', 'error'); return; }
+    var record = {
+      id: res.data.request_id, itemName: name, category: payload.category, quantity: parseInt(payload.quantity, 10) || 1,
+      estimatedCost: payload.estimated_cost !== '' ? parseFloat(payload.estimated_cost) : null,
+      ppmpReference: payload.ppmp_reference || null, justification: payload.justification || null,
+      status: payload.status, notes: payload.notes || null,
+    };
+    if (id) {
+      var idx = PROCUREMENT_REQUESTS.findIndex(function (x) { return x.id === id; });
+      if (idx !== -1) PROCUREMENT_REQUESTS[idx] = record;
+      showToast('Procurement request updated.', 'success');
+    } else {
+      PROCUREMENT_REQUESTS.unshift(record);
+      showToast('Procurement request added.', 'success');
+    }
+    renderRequests();
+    resetReqForm();
+  });
+});
+
+// ---------- Cross-Campus Resource Sharing (Art. VII Sec. 20-C) ----------
+var SHARE_STATUS_COLORS = {
+  'Requested': ['#F3F4F6', '#6B7280'], 'Approved': ['#DBEAFE', '#1D4ED8'], 'In Transit': ['#EDE9FE', '#6D28D9'],
+  'Returned': ['#DCFCE7', '#15803D'], 'Declined': ['#FEE2E2', '#B91C1C'],
+};
+function renderShareRequests() {
+  var body = document.getElementById('shareTableBody');
+  if (!body) return;
+  if (!SHARE_REQUESTS.length) { body.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-xs text-gray-600">No resource sharing requests on file yet.</td></tr>'; return; }
+  body.innerHTML = SHARE_REQUESTS.map(function (s) {
+    var colors = SHARE_STATUS_COLORS[s.status] || SHARE_STATUS_COLORS['Requested'];
+    var dates = (s.startDate || '&mdash;') + ' &rarr; ' + (s.endDate || '&mdash;');
+    return '<tr class="border-t border-gray-50">' +
+      '<td class="px-4 py-3 text-xs font-medium" style="color:#1a1a2e;">' + s.itemName + '</td>' +
+      '<td class="px-4 py-3 text-xs text-gray-500">' + s.fromCampus + ' &rarr; ' + s.toCampus + '</td>' +
+      '<td class="px-4 py-3 text-xs text-gray-500">' + dates + '</td>' +
+      '<td class="px-4 py-3 text-xs"><span class="px-2 py-1 rounded-full text-[10px] font-semibold" style="background:' + colors[0] + '; color:' + colors[1] + ';">' + s.status + '</span></td>' +
+      '<td class="px-4 py-3 text-xs flex gap-1.5">' +
+        '<button type="button" class="share-edit-btn px-2 py-1 rounded-lg text-xs font-semibold" style="background:#F3F4F6; color:#374151;" data-id="' + s.id + '">Edit</button>' +
+        '<button type="button" class="share-delete-btn px-2 py-1 rounded-lg text-xs font-semibold" style="background:#FEE2E2; color:#B91C1C;" data-id="' + s.id + '">Delete</button>' +
+      '</td></tr>';
+  }).join('');
+}
+renderShareRequests();
+function resetShareForm() {
+  document.getElementById('shareFormTitle').textContent = 'New Resource Sharing Request';
+  document.getElementById('saveShareLabel').textContent = 'Add Request';
+  document.getElementById('shareResetBtn').classList.add('hidden');
+  document.getElementById('shareIdInput').value = '';
+  document.getElementById('shareEquipmentInput').value = '';
+  document.getElementById('shareFromCampusInput').value = 'ARASOF-Nasugbu';
+  document.getElementById('shareToCampusInput').value = 'ARASOF-Nasugbu';
+  document.getElementById('shareStartDateInput').value = '';
+  document.getElementById('shareEndDateInput').value = '';
+  document.getElementById('shareStatusInput').value = 'Requested';
+  document.getElementById('shareConditionInput').value = '';
+  document.getElementById('sharePurposeInput').value = '';
+  document.getElementById('shareNotesInput').value = '';
+}
+document.getElementById('shareTableBody').addEventListener('click', function (e) {
+  var editBtn = e.target.closest('.share-edit-btn');
+  if (editBtn) {
+    var s = SHARE_REQUESTS.find(function (x) { return x.id === parseInt(editBtn.dataset.id, 10); });
+    if (!s) return;
+    document.getElementById('shareFormTitle').textContent = 'Edit Resource Sharing Request';
+    document.getElementById('saveShareLabel').textContent = 'Update Request';
+    document.getElementById('shareResetBtn').classList.remove('hidden');
+    document.getElementById('shareIdInput').value = s.id;
+    document.getElementById('shareEquipmentInput').value = s.equipmentId;
+    document.getElementById('shareFromCampusInput').value = s.fromCampus;
+    document.getElementById('shareToCampusInput').value = s.toCampus;
+    document.getElementById('shareStartDateInput').value = s.startDate || '';
+    document.getElementById('shareEndDateInput').value = s.endDate || '';
+    document.getElementById('shareStatusInput').value = s.status;
+    document.getElementById('shareConditionInput').value = s.conditionOnReturn || '';
+    document.getElementById('sharePurposeInput').value = s.purpose || '';
+    document.getElementById('shareNotesInput').value = s.notes || '';
+    document.getElementById('shareEquipmentInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  var delBtn = e.target.closest('.share-delete-btn');
+  if (delBtn) {
+    var id = parseInt(delBtn.dataset.id, 10);
+    fetch(APP_URL + '/admin/resource-sharing', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ csrf_token: CSRF_TOKEN, action: 'delete', share_id: id }),
+    }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (res) {
+      if (!res.ok) { showToast(res.data.error || 'Failed to delete.', 'error'); return; }
+      SHARE_REQUESTS = SHARE_REQUESTS.filter(function (x) { return x.id !== id; });
+      renderShareRequests();
+      showToast('Sharing request removed.', 'success');
+    });
+  }
+});
+document.getElementById('shareResetBtn').addEventListener('click', resetShareForm);
+document.getElementById('saveShareBtn').addEventListener('click', function () {
+  var id = parseInt(document.getElementById('shareIdInput').value, 10) || 0;
+  var equipmentId = parseInt(document.getElementById('shareEquipmentInput').value, 10) || 0;
+  var toCampus = document.getElementById('shareToCampusInput').value;
+  if (!equipmentId) { showToast('Select an item.', 'error'); return; }
+  var payload = {
+    csrf_token: CSRF_TOKEN, action: 'save', share_id: id, equipment_id: equipmentId,
+    from_campus: document.getElementById('shareFromCampusInput').value, to_campus: toCampus,
+    requested_start_date: document.getElementById('shareStartDateInput').value,
+    requested_end_date: document.getElementById('shareEndDateInput').value,
+    status: document.getElementById('shareStatusInput').value,
+    condition_on_return: document.getElementById('shareConditionInput').value,
+    purpose: document.getElementById('sharePurposeInput').value.trim(),
+    notes: document.getElementById('shareNotesInput').value.trim(),
+  };
+  fetch(APP_URL + '/admin/resource-sharing', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+  }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (res) {
+    if (!res.ok) { showToast(res.data.error || 'Failed to save sharing request.', 'error'); return; }
+    var eq = EQUIPMENT_ITEMS.find(function (x) { return x.id === equipmentId; });
+    var record = {
+      id: res.data.share_id, equipmentId: equipmentId, itemName: eq ? eq.itemName : '(item)', fromCampus: payload.from_campus,
+      toCampus: payload.to_campus, purpose: payload.purpose || null, startDate: payload.requested_start_date || null,
+      endDate: payload.requested_end_date || null, status: payload.status, conditionOnReturn: payload.condition_on_return || null,
+      notes: payload.notes || null,
+    };
+    if (id) {
+      var idx = SHARE_REQUESTS.findIndex(function (x) { return x.id === id; });
+      if (idx !== -1) SHARE_REQUESTS[idx] = record;
+      showToast('Sharing request updated.', 'success');
+    } else {
+      SHARE_REQUESTS.unshift(record);
+      showToast('Sharing request added.', 'success');
+    }
+    renderShareRequests();
+    resetShareForm();
+  });
+});
+
+// ---------- Loss / Damage Reports (RLSDDP, Art. VII Sec. 20-C.2) ----------
+var LOSS_STATUS_COLORS = {
+  'Reported': ['#FEF9C3', '#92400E'], 'Under Investigation': ['#DBEAFE', '#1D4ED8'], 'Resolved': ['#DCFCE7', '#15803D'],
+};
+function renderLossReports() {
+  var body = document.getElementById('lossTableBody');
+  if (!body) return;
+  if (!LOSS_REPORTS.length) { body.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-xs text-gray-600">No loss/damage reports on file yet.</td></tr>'; return; }
+  body.innerHTML = LOSS_REPORTS.map(function (r) {
+    var colors = LOSS_STATUS_COLORS[r.status] || LOSS_STATUS_COLORS['Reported'];
+    return '<tr class="border-t border-gray-50">' +
+      '<td class="px-4 py-3 text-xs font-medium" style="color:#1a1a2e;">' + r.itemName + '</td>' +
+      '<td class="px-4 py-3 text-xs text-gray-500">' + r.reportType + '</td>' +
+      '<td class="px-4 py-3 text-xs text-gray-500">' + (r.incidentDate || '&mdash;') + '</td>' +
+      '<td class="px-4 py-3 text-xs"><span class="px-2 py-1 rounded-full text-[10px] font-semibold" style="background:' + colors[0] + '; color:' + colors[1] + ';">' + r.status + '</span></td>' +
+      '<td class="px-4 py-3 text-xs flex gap-1.5">' +
+        '<button type="button" class="loss-edit-btn px-2 py-1 rounded-lg text-xs font-semibold" style="background:#F3F4F6; color:#374151;" data-id="' + r.id + '">Edit</button>' +
+        '<button type="button" class="loss-delete-btn px-2 py-1 rounded-lg text-xs font-semibold" style="background:#FEE2E2; color:#B91C1C;" data-id="' + r.id + '">Delete</button>' +
+      '</td></tr>';
+  }).join('');
+}
+renderLossReports();
+function resetLossForm() {
+  document.getElementById('lossFormTitle').textContent = 'New Loss / Damage Report';
+  document.getElementById('saveLossLabel').textContent = 'Add Report';
+  document.getElementById('lossResetBtn').classList.add('hidden');
+  document.getElementById('lossIdInput').value = '';
+  document.getElementById('lossEquipmentInput').value = '';
+  document.getElementById('lossTypeInput').value = 'Lost';
+  document.getElementById('lossIncidentDateInput').value = '';
+  document.getElementById('lossStatusInput').value = 'Reported';
+  document.getElementById('lossDescriptionInput').value = '';
+  document.getElementById('lossResolutionInput').value = '';
+}
+document.getElementById('lossTableBody').addEventListener('click', function (e) {
+  var editBtn = e.target.closest('.loss-edit-btn');
+  if (editBtn) {
+    var r = LOSS_REPORTS.find(function (x) { return x.id === parseInt(editBtn.dataset.id, 10); });
+    if (!r) return;
+    document.getElementById('lossFormTitle').textContent = 'Edit Loss / Damage Report';
+    document.getElementById('saveLossLabel').textContent = 'Update Report';
+    document.getElementById('lossResetBtn').classList.remove('hidden');
+    document.getElementById('lossIdInput').value = r.id;
+    document.getElementById('lossEquipmentInput').value = r.equipmentId;
+    document.getElementById('lossTypeInput').value = r.reportType;
+    document.getElementById('lossIncidentDateInput').value = r.incidentDate || '';
+    document.getElementById('lossStatusInput').value = r.status;
+    document.getElementById('lossDescriptionInput').value = r.description || '';
+    document.getElementById('lossResolutionInput').value = r.resolutionNotes || '';
+    document.getElementById('lossEquipmentInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  var delBtn = e.target.closest('.loss-delete-btn');
+  if (delBtn) {
+    var id = parseInt(delBtn.dataset.id, 10);
+    fetch(APP_URL + '/admin/loss-reports', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ csrf_token: CSRF_TOKEN, action: 'delete', report_id: id }),
+    }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (res) {
+      if (!res.ok) { showToast(res.data.error || 'Failed to delete.', 'error'); return; }
+      LOSS_REPORTS = LOSS_REPORTS.filter(function (x) { return x.id !== id; });
+      renderLossReports();
+      showToast('Report removed.', 'success');
+    });
+  }
+});
+document.getElementById('lossResetBtn').addEventListener('click', resetLossForm);
+document.getElementById('saveLossBtn').addEventListener('click', function () {
+  var id = parseInt(document.getElementById('lossIdInput').value, 10) || 0;
+  var equipmentId = parseInt(document.getElementById('lossEquipmentInput').value, 10) || 0;
+  var description = document.getElementById('lossDescriptionInput').value.trim();
+  if (!equipmentId) { showToast('Select an item.', 'error'); return; }
+  if (!description) { showToast('Enter a description.', 'error'); return; }
+  var payload = {
+    csrf_token: CSRF_TOKEN, action: 'save', report_id: id, equipment_id: equipmentId,
+    report_type: document.getElementById('lossTypeInput').value,
+    incident_date: document.getElementById('lossIncidentDateInput').value,
+    status: document.getElementById('lossStatusInput').value,
+    description: description,
+    resolution_notes: document.getElementById('lossResolutionInput').value.trim(),
+  };
+  fetch(APP_URL + '/admin/loss-reports', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+  }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (res) {
+    if (!res.ok) { showToast(res.data.error || 'Failed to save report.', 'error'); return; }
+    var eq = EQUIPMENT_ITEMS.find(function (x) { return x.id === equipmentId; });
+    var record = {
+      id: res.data.report_id, equipmentId: equipmentId, itemName: eq ? eq.itemName : '(item)', reportType: payload.report_type,
+      incidentDate: payload.incident_date || null, description: payload.description, status: payload.status,
+      resolutionNotes: payload.resolution_notes || null,
+    };
+    if (id) {
+      var idx = LOSS_REPORTS.findIndex(function (x) { return x.id === id; });
+      if (idx !== -1) LOSS_REPORTS[idx] = record;
+      showToast('Report updated.', 'success');
+    } else {
+      LOSS_REPORTS.unshift(record);
+      showToast('Report added.', 'success');
+    }
+    // Reflect the auto-synced condition in the inventory list above without a full page reload.
+    if (eq) {
+      eq.condition = payload.report_type === 'Damaged' ? 'Damaged' : 'Lost';
+      renderEquipment();
+    }
+    renderLossReports();
+    resetLossForm();
+  });
+});
+
 // ---------- Admission Appeals (Art. IV Sec. 11) ----------
 var APPEAL_STATUS_COLORS = {
-  'Submitted': ['#F3F4F6', '#6B7280'], 'Under Review': ['#FEF9C3', '#92400E'], 'Endorsed to TAO Central': ['#DBEAFE', '#1D4ED8'],
+  'Submitted': ['#F3F4F6', '#6B7280'], 'Under Review (OCA)': ['#FEF9C3', '#92400E'],
+  'Evaluation Stage': ['#F3E8FF', '#7C3AED'], 'For Approval (President via TAO)': ['#DBEAFE', '#1D4ED8'],
   'Approved': ['#DCFCE7', '#15803D'], 'Rejected': ['#FEE2E2', '#B91C1C'],
 };
-var APPEAL_CHAIN = ['Submitted', 'Under Review', 'Endorsed to TAO Central'];
+// Mirrors ARTEMIS_APPEAL_CHAIN (app/Support/ui_helpers.php) — emitted from PHP so
+// the two can't drift apart.
+var APPEAL_CHAIN = <?= json_encode(ARTEMIS_APPEAL_CHAIN) ?>;
+
+// The 5-circle tracker used across the rest of the system, pre-rendered by
+// admin_progress_tracker_html() once per stage and keyed 1..5. Rendering it in
+// PHP rather than porting it to JS keeps a single implementation of the markup.
+var APPEAL_TRACKERS = <?= json_encode($appealTrackerHtml, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+function appealStage(status) {
+  var idx = APPEAL_CHAIN.indexOf(status);
+  return idx === -1 ? APPEAL_CHAIN.length + 1 : idx + 1;
+}
 function renderAppeals() {
   var el = document.getElementById('appealsList');
   if (!el) return;
@@ -1779,9 +2480,14 @@ function renderAppeals() {
       '<div class="flex items-start justify-between gap-2 mb-2">' +
         '<div><div class="text-sm font-semibold" style="color:#1a1a2e;">' + a.fullName + '</div>' +
         '<div class="text-xs text-gray-400">' + a.secondarySchool + ' &middot; ' + a.email + (a.contactNumber ? ' &middot; ' + a.contactNumber : '') + '</div>' +
-        '<div class="text-[11px] text-gray-400 mt-0.5">Submitted ' + a.submittedAt + ' &middot; ' + a.campus + '</div></div>' +
+        '<div class="text-[11px] text-gray-400 mt-0.5">Submitted ' + a.submittedAt + ' &middot; ' + a.campus + '</div>' +
+        (a.discipline ? '<span class="inline-block mt-1 px-2 py-0.5 rounded-md text-[10px] font-semibold" style="background:#FEE2E2; color:#B11226;">' + a.discipline + '</span>' : '') +
+        '</div>' +
         '<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold flex-shrink-0" style="background:' + colors[0] + '; color:' + colors[1] + ';">' + a.status + '</span>' +
       '</div>' +
+      // Shared 5-circle tracker in place of a status word on its own, so an
+      // appeal reads the same way as every other application in the system.
+      '<div class="mb-3 pt-1">' + (APPEAL_TRACKERS[appealStage(a.status)] || '') + '</div>' +
       '<div class="text-xs text-gray-600 leading-relaxed mb-2"><span class="font-semibold" style="color:#1a1a2e;">Achievements:</span> ' + a.achievements + '</div>' +
       (a.academicStanding ? '<div class="text-xs text-gray-600 leading-relaxed mb-2"><span class="font-semibold" style="color:#1a1a2e;">Academic Standing:</span> ' + a.academicStanding + '</div>' : '') +
       (a.remarks ? '<div class="text-xs rounded-lg p-2.5 mb-2" style="background:#FEF9C3; color:#92400E;"><span class="font-semibold">Remarks:</span> ' + a.remarks + '</div>' : '') +
