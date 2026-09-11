@@ -15,8 +15,9 @@
  *
  * `verdict` is one of Eligible / Not Eligible / Needs Verification.
  * The legacy `eligible` boolean is retained for backwards compatibility with
- * existing UI code and means only "no verified failure was found". New UI and
- * workflow code should prefer `verdict`.
+ * existing UI code and is deliberately conservative: it is true only when every
+ * required check is positively verified. New UI/workflow code should prefer
+ * `verdict` so it can distinguish a verified failure from missing evidence.
  */
 
 /**
@@ -89,7 +90,7 @@ function evaluate_application_eligibility(string $typeCode, ?array $profile, arr
     $hasFailingGrades = eligibility_verified_bool($profile, 'has_failing_grades');
     $noFailingGrades = $hasFailingGrades === null ? null : !$hasFailingGrades;
     $academicDetail = $noFailingGrades === null
-        ? 'No verified course-level failing-grade status is on file. GWA alone is not sufficient to prove that no course was failed.'
+        ? 'Needs verification: no verified course-level failing-grade status is on file. GWA alone is not sufficient to prove that no course was failed.'
         : ($noFailingGrades
             ? 'Verified record indicates no failing course.'
             : 'Verified record indicates at least one failing course.');
@@ -107,7 +108,7 @@ function evaluate_application_eligibility(string $typeCode, ?array $profile, arr
                 'label' => 'Member for at least two consecutive semesters (Art. IX Sec. 30-b)',
                 'pass' => $yearsActive === null ? null : ((float) $yearsActive >= 1),
                 'detail' => $yearsActive === null
-                    ? 'No membership-tenure evidence is on file.'
+                    ? 'Needs verification: no membership-tenure evidence is on file.'
                     : ((float) $yearsActive >= 1
                         ? "{$yearsActive} year(s) of membership is recorded; reviewer should confirm the semesters are consecutive."
                         : 'Recorded tenure is less than one year.'),
@@ -135,7 +136,7 @@ function evaluate_application_eligibility(string $typeCode, ?array $profile, arr
                 'label' => 'Good standing with the organization and University (Art. X Sec. 35-b)',
                 'pass' => $goodStanding,
                 'detail' => $goodStanding === null
-                    ? 'Good standing has not yet been explicitly verified; attendance, academic, and behavioral standing require reviewer confirmation.'
+                    ? 'Needs verification: good standing has not yet been explicitly verified; attendance, academic, and behavioral standing require reviewer confirmation.'
                     : ($goodStanding ? 'Good standing has been verified.' : 'Good standing was not verified.'),
             ];
 
@@ -147,8 +148,8 @@ function evaluate_application_eligibility(string $typeCode, ?array $profile, arr
                 'detail' => $hasPerformanceProof
                     ? 'Proof of involvement in performances/rehearsals is on file.'
                     : ($hasTalents
-                        ? 'A talent/discipline is recorded, but that alone does not verify actual rehearsal/training participation.'
-                        : 'No performance/rehearsal evidence is on file.'),
+                        ? 'Needs verification: a talent/discipline is recorded, but that alone does not verify actual rehearsal/training participation.'
+                        : 'Needs verification: no performance/rehearsal evidence is on file.'),
             ];
 
             $pathfitEquivalent = eligibility_verified_bool($profile, 'pathfit_equivalent_training_verified');
@@ -156,7 +157,7 @@ function evaluate_application_eligibility(string $typeCode, ?array $profile, arr
                 'label' => 'Training/rehearsals meet PATHFit-equivalent physical demands (Art. X Sec. 35-c)',
                 'pass' => $pathfitEquivalent,
                 'detail' => $pathfitEquivalent === null
-                    ? 'Physical-intensity equivalence must be verified from the training schedule/hours and supporting certification by the trainer/OCA and PATHFit faculty.'
+                    ? 'Needs verification: physical-intensity equivalence must be verified from the training schedule/hours and supporting certification by the trainer/OCA and PATHFit faculty.'
                     : ($pathfitEquivalent ? 'PATHFit-equivalent physical demand has been verified.' : 'Verified training evidence does not meet the required physical-intensity equivalence.'),
             ];
             break;
@@ -166,7 +167,7 @@ function evaluate_application_eligibility(string $typeCode, ?array $profile, arr
                 'label' => 'At least 2 years residency in the University (Art. VIII Sec. 22-b)',
                 'pass' => $yearsActive === null ? null : ((float) $yearsActive >= 2),
                 'detail' => $yearsActive === null
-                    ? 'No verified University residency duration is on file.'
+                    ? 'Needs verification: no verified University residency duration is on file.'
                     : "{$yearsActive} year(s) is currently recorded in the performer profile; reviewer should verify this represents University residency, not merely RPAG tenure.",
             ];
             $checks[] = [
@@ -196,7 +197,7 @@ function evaluate_application_eligibility(string $typeCode, ?array $profile, arr
                 'label' => 'Satisfactory academic standing (Art. IV Sec. 11-A.2)',
                 'pass' => $academicStanding,
                 'detail' => $academicStanding === null
-                    ? 'Satisfactory academic standing has not yet been explicitly verified from the applicant\'s secondary-school record.'
+                    ? 'Needs verification: satisfactory academic standing has not yet been explicitly verified from the applicant\'s secondary-school record.'
                     : ($academicStanding ? 'Satisfactory academic standing has been verified.' : 'The submitted record does not verify satisfactory academic standing.'),
             ];
             break;
@@ -220,9 +221,9 @@ function evaluate_application_eligibility(string $typeCode, ?array $profile, arr
         : ($hasUnverified ? 'Needs Verification' : 'Eligible');
 
     return [
-        // Kept for backwards compatibility. It means "no verified disqualifier"
-        // and must not be treated as a final institutional approval.
-        'eligible' => !$hasFailure,
+        // Existing binary UI can only show Eligible / Not Eligible. Be conservative
+        // there: missing evidence is never rendered as a green Eligible result.
+        'eligible' => $verdict === 'Eligible',
         'verdict' => $verdict,
         'checks' => $checks,
     ];
