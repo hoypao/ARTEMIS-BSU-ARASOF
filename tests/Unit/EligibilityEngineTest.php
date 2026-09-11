@@ -34,6 +34,9 @@ class EligibilityEngineTest extends TestCase
         $result = evaluate_application_eligibility('stipend', $profile, $documents);
 
         $this->assertSame('Needs Verification', $result['verdict']);
+        // The old dashboard still consumes this binary flag. Unknown evidence
+        // must therefore fail closed instead of being shown as green Eligible.
+        $this->assertFalse($result['eligible']);
         $academicCheck = $this->findCheck($result['checks'], 'No failing grades in the credited semesters');
         $this->assertNull($academicCheck['pass']);
         $this->assertStringContainsString('GWA alone is not sufficient', $academicCheck['detail']);
@@ -79,6 +82,7 @@ class EligibilityEngineTest extends TestCase
         $result = evaluate_application_eligibility('pathfit_exemption', $profile, $documents);
 
         $this->assertSame('Needs Verification', $result['verdict']);
+        $this->assertFalse($result['eligible']);
         $equivalencyCheck = $this->findCheck($result['checks'], 'Training/rehearsals meet PATHFit-equivalent physical demands');
         $this->assertNull($equivalencyCheck['pass']);
         $this->assertStringContainsString('must be verified', $equivalencyCheck['detail']);
