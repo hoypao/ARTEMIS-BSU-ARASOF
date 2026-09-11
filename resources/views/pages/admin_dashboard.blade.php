@@ -1658,11 +1658,18 @@ function openViewApp(code) {
   if (app.eligibility && app.eligibility.checks && app.eligibility.checks.length) {
     eligBox.classList.remove('hidden');
     var verdictEl = document.getElementById('viewAppEligibilityVerdict');
-    verdictEl.textContent = app.eligibility.eligible ? 'Eligible' : 'Not Eligible';
-    verdictEl.style.background = app.eligibility.eligible ? '#DCFCE7' : '#FEE2E2';
-    verdictEl.style.color = app.eligibility.eligible ? '#15803D' : '#B91C1C';
-    eligBox.style.background = app.eligibility.eligible ? '#F0FDF4' : '#FEF2F2';
-    eligBox.style.borderColor = app.eligibility.eligible ? '#DCFCE7' : '#FEE2E2';
+    var eligibilityVerdict = app.eligibility.verdict || (app.eligibility.eligible ? 'Eligible' : 'Not Eligible');
+    var eligibilityColors = {
+      'Eligible': { badgeBg: '#DCFCE7', text: '#15803D', boxBg: '#F0FDF4', border: '#DCFCE7' },
+      'Needs Verification': { badgeBg: '#FEF3C7', text: '#B45309', boxBg: '#FFFBEB', border: '#FDE68A' },
+      'Not Eligible': { badgeBg: '#FEE2E2', text: '#B91C1C', boxBg: '#FEF2F2', border: '#FEE2E2' }
+    };
+    var eligibilityColor = eligibilityColors[eligibilityVerdict] || eligibilityColors['Not Eligible'];
+    verdictEl.textContent = eligibilityVerdict;
+    verdictEl.style.background = eligibilityColor.badgeBg;
+    verdictEl.style.color = eligibilityColor.text;
+    eligBox.style.background = eligibilityColor.boxBg;
+    eligBox.style.borderColor = eligibilityColor.border;
     document.getElementById('viewAppEligibilityList').innerHTML = app.eligibility.checks.map(function (c) {
       var color = c.pass === true ? '#15803D' : (c.pass === false ? '#B91C1C' : '#4B5563');
       var icon = c.pass === true ? 'check-circle' : (c.pass === false ? 'x-circle' : 'help-circle');
